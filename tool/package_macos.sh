@@ -10,7 +10,7 @@ set -eu
 cd "$(dirname "$0")/.."
 
 flutter build macos --release
-APP="build/macos/Build/Products/Release/CourseGrab.app"
+APP="build/macos/Build/Products/Release/finder.app"
 IDENTITY="${CODESIGN_IDENTITY:--}"
 
 if [ -d third_party/macos/bin ]; then

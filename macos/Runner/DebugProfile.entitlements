@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<!--
-	  CourseGrab runs yt-dlp and FFmpeg as child processes. Sandboxed children
+	  finder runs yt-dlp and FFmpeg as child processes. Sandboxed children
 	  inherit the sandbox and cannot write to user-chosen folders, so the app is
 	  distributed outside the Mac App Store with the sandbox disabled.
 	-->

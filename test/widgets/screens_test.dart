@@ -1,8 +1,8 @@
-import 'package:coursegrab/core/routing/routes.dart';
-import 'package:coursegrab/features/downloads/application/download_providers.dart';
-import 'package:coursegrab/models/dependency_status.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/history_record.dart';
+import 'package:finder/core/routing/routes.dart';
+import 'package:finder/features/downloads/application/download_providers.dart';
+import 'package:finder/models/dependency_status.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/history_record.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

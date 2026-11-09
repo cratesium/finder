@@ -1,5 +1,5 @@
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/services/ytdlp/ytdlp_args.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/services/ytdlp/ytdlp_args.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String? valueAfter(List<String> args, String flag) {

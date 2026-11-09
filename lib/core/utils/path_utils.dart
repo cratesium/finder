@@ -38,7 +38,7 @@ abstract final class PathUtils {
     try {
       final d = Directory(dir);
       await d.create(recursive: true);
-      final probe = File(p.join(dir, '.coursegrab-write-test-${DateTime.now().microsecondsSinceEpoch}'));
+      final probe = File(p.join(dir, '.finder-write-test-${DateTime.now().microsecondsSinceEpoch}'));
       await probe.writeAsString('ok', flush: true);
       await probe.delete();
       return true;

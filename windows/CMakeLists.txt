@@ -1,10 +1,10 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(coursegrab LANGUAGES CXX)
+project(finder LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "coursegrab")
+set(BINARY_NAME "finder")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -109,7 +109,7 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
 
 # Optionally bundle verified yt-dlp / FFmpeg binaries next to the executable.
 # Populate third_party/windows/bin with `dart run tool/fetch_dependencies.dart`.
-# CourseGrab looks for them in "<install dir>\\bin" at runtime.
+# finder looks for them in "<install dir>\\bin" at runtime.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/windows/bin/"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
   COMPONENT Runtime

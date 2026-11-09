@@ -9,7 +9,7 @@ enum DependencyKind {
 
 enum DependencySource {
   custom('Custom path'),
-  managed('Installed by CourseGrab'),
+  managed('Installed by finder'),
   bundled('Bundled with app'),
   system('System');
 

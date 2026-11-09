@@ -54,7 +54,7 @@ class DownloadRequest {
       '${entry.stableId}|${options.outputKind}|${PathUtils.normalizeDir(effectiveDirectory)}';
 }
 
-/// Live progress reported by yt-dlp. Values are never estimated by CourseGrab.
+/// Live progress reported by yt-dlp. Values are never estimated by finder.
 class DownloadProgress {
   const DownloadProgress({
     this.downloadedBytes,

@@ -1,4 +1,4 @@
-/// Categories of failure that CourseGrab knows how to explain to users.
+/// Categories of failure that finder knows how to explain to users.
 enum AppErrorKind {
   invalidUrl,
   unsupportedSource,
@@ -70,7 +70,7 @@ class AppError implements Exception {
         AppErrorKind.unavailable =>
           'This video is unavailable. It may have been removed or blocked in your region.',
         AppErrorKind.inaccessible =>
-          'This content is private or requires signing in. CourseGrab only downloads content you can access without bypassing restrictions.',
+          'This content is private or requires signing in. finder only downloads content you can access without bypassing restrictions.',
         AppErrorKind.drmProtected =>
           'This content is DRM protected and can\'t be downloaded.',
         AppErrorKind.formatUnavailable =>
@@ -80,13 +80,13 @@ class AppError implements Exception {
         AppErrorKind.diskFull =>
           'There isn\'t enough free disk space at the destination.',
         AppErrorKind.permission =>
-          'CourseGrab doesn\'t have permission to write to the destination folder.',
+          'finder doesn\'t have permission to write to the destination folder.',
         AppErrorKind.processCrashed =>
           'The downloader stopped unexpectedly. See the logs for details.',
         AppErrorKind.interrupted =>
           'The download was interrupted before it finished.',
         AppErrorKind.storage =>
-          'CourseGrab couldn\'t read or write its local database.',
+          'finder couldn\'t read or write its local database.',
         AppErrorKind.timeout => 'The operation took too long and was stopped.',
         AppErrorKind.cancelled => 'The operation was cancelled.',
         AppErrorKind.unknown =>

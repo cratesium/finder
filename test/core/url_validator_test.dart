@@ -1,4 +1,4 @@
-import 'package:coursegrab/core/utils/url_validator.dart';
+import 'package:finder/core/utils/url_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

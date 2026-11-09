@@ -1,10 +1,10 @@
 /// Static application configuration.
 abstract final class AppConfig {
-  static const appName = 'CourseGrab';
+  static const appName = 'finder';
   static const version = '1.0.0';
   static const buildNumber = 1;
-  static const dataFolderName = 'CourseGrab';
-  static const databaseFileName = 'coursegrab.db';
+  static const dataFolderName = 'finder';
+  static const databaseFileName = 'finder.db';
 
   /// Hard upper bound for user-configurable concurrency.
   static const maxConcurrentLimit = 6;
@@ -23,7 +23,7 @@ abstract final class AppConfig {
   static const processKillGrace = Duration(seconds: 4);
 }
 
-/// Official release endpoints for dependencies that CourseGrab can install.
+/// Official release endpoints for dependencies that finder can install.
 ///
 /// Every download is verified against the SHA-256 sums published in the same
 /// release before it is made executable.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Design tokens for CourseGrab. Accessed via `context.palette`.
+/// Design tokens for finder. Accessed via `context.palette`.
 @immutable
 class AppPalette extends ThemeExtension<AppPalette> {
   const AppPalette({

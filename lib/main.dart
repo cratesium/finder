@@ -25,7 +25,7 @@ Future<void> main() async {
   try {
     paths = await AppPaths.resolve();
   } catch (e) {
-    runApp(StartupErrorApp(message: 'CourseGrab couldn\'t access its application data folder.\n\n$e'));
+    runApp(StartupErrorApp(message: 'finder couldn\'t access its application data folder.\n\n$e'));
     return;
   }
 
@@ -55,7 +55,7 @@ Future<void> main() async {
         initialSettingsProvider.overrideWithValue(settings),
         interruptedAtStartupProvider.overrideWithValue(interrupted),
       ],
-      child: const CourseGrabApp(),
+      child: const FinderApp(),
     ));
   } on AppError catch (e) {
     _log.severe('startup failed', e);
@@ -83,7 +83,7 @@ class StartupErrorApp extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('CourseGrab couldn\'t start', style: Theme.of(context).textTheme.headlineSmall),
+                  Text('finder couldn\'t start', style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 12),
                   SelectableText(message),
                 ],

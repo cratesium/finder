@@ -36,7 +36,7 @@ class AppLogger {
 
   String? get logDirectory => _logDirectory;
   String? get currentLogFile =>
-      _logDirectory == null ? null : p.join(_logDirectory!, 'coursegrab.log');
+      _logDirectory == null ? null : p.join(_logDirectory!, 'finder.log');
 
   /// Initializes the root logger. Safe to call more than once.
   Future<void> init({
@@ -54,7 +54,7 @@ class AppLogger {
       _sink = File(currentLogFile!).openWrite(mode: FileMode.append);
     } catch (e) {
       // Logging must never crash the app; fall back to console only.
-      stderr.writeln('CourseGrab: unable to open log file: $e');
+      stderr.writeln('finder: unable to open log file: $e');
     }
     _sub = Logger.root.onRecord.listen((record) {
       final line = format(record);
@@ -99,18 +99,18 @@ class AppLogger {
   }
 
   static Future<void> _rotateIfNeeded(String directory) async {
-    final current = File(p.join(directory, 'coursegrab.log'));
+    final current = File(p.join(directory, 'finder.log'));
     if (!await current.exists() || await current.length() < _maxBytes) return;
     for (var i = _keepFiles - 1; i >= 1; i--) {
-      final older = File(p.join(directory, 'coursegrab.$i.log'));
+      final older = File(p.join(directory, 'finder.$i.log'));
       if (await older.exists()) {
         if (i == _keepFiles - 1) {
           await older.delete();
         } else {
-          await older.rename(p.join(directory, 'coursegrab.${i + 1}.log'));
+          await older.rename(p.join(directory, 'finder.${i + 1}.log'));
         }
       }
     }
-    await current.rename(p.join(directory, 'coursegrab.1.log'));
+    await current.rename(p.join(directory, 'finder.1.log'));
   }
 }

@@ -1,4 +1,4 @@
-import 'package:coursegrab/services/ytdlp/ytdlp_output_parser.dart';
+import 'package:finder/services/ytdlp/ytdlp_output_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

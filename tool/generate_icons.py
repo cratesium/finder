@@ -1,4 +1,4 @@
-"""Generates CourseGrab's app icons (macOS asset catalog + Windows .ico).
+"""Generates finder's app icons (macOS asset catalog + Windows .ico).
 
     python3 tool/generate_icons.py
 

@@ -1,13 +1,13 @@
-import 'package:coursegrab/app.dart';
-import 'package:coursegrab/core/config/app_paths.dart';
-import 'package:coursegrab/core/di/providers.dart';
-import 'package:coursegrab/core/routing/app_router.dart';
-import 'package:coursegrab/core/routing/routes.dart';
-import 'package:coursegrab/features/settings/application/dependency_controller.dart';
-import 'package:coursegrab/models/app_settings.dart';
-import 'package:coursegrab/models/dependency_status.dart';
-import 'package:coursegrab/models/media_info.dart';
-import 'package:coursegrab/services/trust_store_service.dart';
+import 'package:finder/app.dart';
+import 'package:finder/core/config/app_paths.dart';
+import 'package:finder/core/di/providers.dart';
+import 'package:finder/core/routing/app_router.dart';
+import 'package:finder/core/routing/routes.dart';
+import 'package:finder/features/settings/application/dependency_controller.dart';
+import 'package:finder/models/app_settings.dart';
+import 'package:finder/models/dependency_status.dart';
+import 'package:finder/models/media_info.dart';
+import 'package:finder/services/trust_store_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -88,11 +88,11 @@ class Harness {
         dependencyProvider.overrideWith(() => FakeDependencyController(deps)),
         ytDlpNetworkProvider.overrideWith((ref) => YtDlpNetworkConfig.none),
       ],
-      child: CourseGrabApp(router: buildRouter(initialLocation: location)),
+      child: FinderApp(router: buildRouter(initialLocation: location)),
     );
     await tester.pumpWidget(scope);
     await idle(tester);
-    return ProviderScope.containerOf(tester.element(find.byType(CourseGrabApp)));
+    return ProviderScope.containerOf(tester.element(find.byType(FinderApp)));
   }
 }
 

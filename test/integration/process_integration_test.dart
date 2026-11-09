@@ -3,20 +3,20 @@ library;
 
 import 'dart:io';
 
-import 'package:coursegrab/core/errors/app_error.dart';
-import 'package:coursegrab/core/utils/platform_info.dart';
-import 'package:coursegrab/models/dependency_status.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/media_info.dart';
-import 'package:coursegrab/services/binary_installer.dart';
-import 'package:coursegrab/services/cancellation.dart';
-import 'package:coursegrab/services/dependency_manager.dart';
-import 'package:coursegrab/services/downloader_service.dart';
-import 'package:coursegrab/services/metadata_service.dart';
-import 'package:coursegrab/services/process_service.dart';
-import 'package:coursegrab/services/trust_store_service.dart';
-import 'package:coursegrab/services/ytdlp/ytdlp_args.dart';
-import 'package:coursegrab/services/ytdlp/ytdlp_output_parser.dart';
+import 'package:finder/core/errors/app_error.dart';
+import 'package:finder/core/utils/platform_info.dart';
+import 'package:finder/models/dependency_status.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/media_info.dart';
+import 'package:finder/services/binary_installer.dart';
+import 'package:finder/services/cancellation.dart';
+import 'package:finder/services/dependency_manager.dart';
+import 'package:finder/services/downloader_service.dart';
+import 'package:finder/services/metadata_service.dart';
+import 'package:finder/services/process_service.dart';
+import 'package:finder/services/trust_store_service.dart';
+import 'package:finder/services/ytdlp/ytdlp_args.dart';
+import 'package:finder/services/ytdlp/ytdlp_output_parser.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -238,7 +238,7 @@ void main() {
           platform: PlatformInfo(
             os: HostOs.macos,
             arch: HostArch.arm64,
-            resolvedExecutable: p.join(tmp.path, 'App.app', 'Contents', 'MacOS', 'CourseGrab'),
+            resolvedExecutable: p.join(tmp.path, 'App.app', 'Contents', 'MacOS', 'finder'),
             environment: {'PATH': path.join(':'), 'HOME': tmp.path},
           ),
           processes: processes,

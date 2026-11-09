@@ -19,12 +19,12 @@ abstract final class MetadataParser {
       decoded = jsonDecode(jsonText);
     } on FormatException catch (e) {
       throw AppError(AppErrorKind.unknown,
-          'yt-dlp returned data CourseGrab couldn\'t understand.',
+          'yt-dlp returned data finder couldn\'t understand.',
           detail: 'invalid JSON: ${e.message}');
     }
     if (decoded is! Map<String, Object?>) {
       throw const AppError(AppErrorKind.unknown,
-          'yt-dlp returned data CourseGrab couldn\'t understand.',
+          'yt-dlp returned data finder couldn\'t understand.',
           detail: 'top-level JSON is not an object');
     }
     return parse(decoded, sourceUrl: sourceUrl);

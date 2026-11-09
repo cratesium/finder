@@ -1,12 +1,12 @@
-import 'package:coursegrab/core/errors/app_error.dart';
-import 'package:coursegrab/core/errors/error_classifier.dart';
-import 'package:coursegrab/core/logging/log_sanitizer.dart';
-import 'package:coursegrab/core/utils/formatters.dart';
-import 'package:coursegrab/core/utils/path_utils.dart';
-import 'package:coursegrab/models/app_settings.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/services/binary_installer.dart';
-import 'package:coursegrab/services/ffmpeg_service.dart';
+import 'package:finder/core/errors/app_error.dart';
+import 'package:finder/core/errors/error_classifier.dart';
+import 'package:finder/core/logging/log_sanitizer.dart';
+import 'package:finder/core/utils/formatters.dart';
+import 'package:finder/core/utils/path_utils.dart';
+import 'package:finder/models/app_settings.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/services/binary_installer.dart';
+import 'package:finder/services/ffmpeg_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:coursegrab/core/errors/app_error.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/media_info.dart';
-import 'package:coursegrab/services/ytdlp/metadata_parser.dart';
+import 'package:finder/core/errors/app_error.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/media_info.dart';
+import 'package:finder/services/ytdlp/metadata_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, Object?> fmt(String id, {int? w, int? h, String v = 'avc1', String a = 'none', String ext = 'mp4'}) => {

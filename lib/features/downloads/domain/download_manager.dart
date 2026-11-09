@@ -378,7 +378,7 @@ class DownloadManager {
       final dir = task.request.effectiveDirectory;
       if (!await _directoryCheck(dir)) {
         throw AppError(AppErrorKind.permission,
-            'CourseGrab can\'t write to the destination folder. Choose another folder or check its permissions.',
+            'finder can\'t write to the destination folder. Choose another folder or check its permissions.',
             detail: PathUtils.displayPath(dir));
       }
       await _recordHistory(task, HistoryStatus.downloading);
@@ -556,7 +556,7 @@ class DownloadManager {
         await _recordHistory(taskById(id)!, HistoryStatus.cancelled);
       case _StopReason.shutdown:
         await _recordHistory(t, HistoryStatus.interrupted,
-            error: 'CourseGrab was closed before this download finished.');
+            error: 'finder was closed before this download finished.');
       case null:
         break;
     }
@@ -654,7 +654,7 @@ class DownloadManager {
       final t = taskById(id);
       if (t != null) {
         await _recordHistory(t, HistoryStatus.interrupted,
-            error: 'CourseGrab was closed before this download finished.');
+            error: 'finder was closed before this download finished.');
       }
     }
     _disposed = true;

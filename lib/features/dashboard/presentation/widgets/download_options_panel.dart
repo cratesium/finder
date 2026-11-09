@@ -21,7 +21,7 @@ class DownloadOptionsPanel extends ConsumerWidget {
     final dir = await ref.read(directoryPickerProvider).pickDirectory(initialDirectory: o.destinationDir);
     if (dir == null) return;
     if (!await PathUtils.ensureWritableDirectory(dir)) {
-      if (context.mounted) showToast(context, 'CourseGrab can\'t write to that folder. Choose another one.');
+      if (context.mounted) showToast(context, 'finder can\'t write to that folder. Choose another one.');
       return;
     }
     ref.read(dashboardProvider.notifier).setOptions(o.copyWith(destinationDir: dir));

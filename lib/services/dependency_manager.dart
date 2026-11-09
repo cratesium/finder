@@ -17,7 +17,7 @@ final _log = Logger('dependencies');
 ///
 /// Resolution order (first valid wins):
 /// 1. Custom path configured in Settings (never silently replaced).
-/// 2. Copy installed by CourseGrab in the app data `bin` folder.
+/// 2. Copy installed by finder in the app data `bin` folder.
 /// 3. Copy bundled inside the packaged application.
 /// 4. `PATH` and well-known install locations.
 class DependencyManager {
@@ -196,7 +196,7 @@ class DependencyManager {
     );
   }
 
-  /// Whether CourseGrab can download a verified official build on this OS.
+  /// Whether finder can download a verified official build on this OS.
   bool canInstall(DependencyKind kind) {
     if (kind == DependencyKind.ytDlp) return platform.isMacOS || platform.isWindows;
     // FFmpeg's project only publishes source; yt-dlp's FFmpeg-Builds provides
@@ -218,7 +218,7 @@ class DependencyManager {
     return 'FFmpeg is needed to merge video and audio. Download a macOS build '
         'linked from ${DependencySources.ffmpegHomepage}, place ffmpeg and ffprobe '
         'in a folder, then click "Choose file" and select ffmpeg. If you already '
-        'use a package manager, CourseGrab detects ffmpeg in /opt/homebrew/bin, '
+        'use a package manager, finder detects ffmpeg in /opt/homebrew/bin, '
         '/usr/local/bin and /opt/local/bin automatically.';
   }
 
@@ -318,7 +318,7 @@ class DependencyManager {
     }
   }
 
-  /// Updates yt-dlp when it is managed by CourseGrab (re-downloads latest).
+  /// Updates yt-dlp when it is managed by finder (re-downloads latest).
   /// Other installations must be updated by whatever installed them.
   bool canUpdate(DependencyStatus status) =>
       status.isReady && status.source == DependencySource.managed && canInstall(status.kind);

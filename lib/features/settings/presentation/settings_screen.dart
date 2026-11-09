@@ -33,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
       final dir = await ref.read(directoryPickerProvider).pickDirectory(initialDirectory: s.downloadDirectory);
       if (dir == null) return;
       if (!await PathUtils.ensureWritableDirectory(dir)) {
-        if (context.mounted) showToast(context, 'CourseGrab can\'t write to that folder.');
+        if (context.mounted) showToast(context, 'finder can\'t write to that folder.');
         return;
       }
       await update((x) => x.copyWith(downloadDirectory: dir));

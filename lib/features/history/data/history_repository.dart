@@ -154,7 +154,7 @@ class SqliteHistoryRepository implements HistoryRepository {
           'history',
           {
             'status': HistoryStatus.interrupted.name,
-            'error_message': 'CourseGrab was closed before this download finished.',
+            'error_message': 'finder was closed before this download finished.',
           },
           where: 'status = ?',
           whereArgs: [HistoryStatus.downloading.name],

@@ -12,8 +12,8 @@
 // you must supply a build you trust with --ffmpeg (ffprobe must sit next to it).
 import 'dart:io';
 
-import 'package:coursegrab/core/config/app_config.dart';
-import 'package:coursegrab/services/binary_installer.dart';
+import 'package:finder/core/config/app_config.dart';
+import 'package:finder/services/binary_installer.dart';
 import 'package:path/path.dart' as p;
 
 Future<void> main(List<String> args) async {
@@ -32,7 +32,7 @@ Future<void> main(List<String> args) async {
   final out = Directory(p.join('third_party', platform!, 'bin'));
   if (await out.exists()) await out.delete(recursive: true);
   await out.create(recursive: true);
-  final work = await Directory.systemTemp.createTemp('coursegrab-deps');
+  final work = await Directory.systemTemp.createTemp('finder-deps');
   final installer = BinaryInstaller();
   void progress(double? f, String stage) =>
       stdout.write('\r  $stage ${f == null ? '' : '${(f * 100).toStringAsFixed(0)}%'}      ');

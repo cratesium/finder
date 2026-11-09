@@ -6,12 +6,12 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:coursegrab/core/errors/app_error.dart';
-import 'package:coursegrab/core/routing/routes.dart';
-import 'package:coursegrab/features/downloads/application/download_providers.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/history_record.dart';
-import 'package:coursegrab/services/ytdlp/ytdlp_output_parser.dart';
+import 'package:finder/core/errors/app_error.dart';
+import 'package:finder/core/routing/routes.dart';
+import 'package:finder/features/downloads/application/download_providers.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/history_record.dart';
+import 'package:finder/services/ytdlp/ytdlp_output_parser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -100,7 +100,7 @@ void main() {
         format: 'mp4',
         fileSize: 214958080,
         filePath: '/tmp/missing.mp4',
-        errorMessage: i == 1 ? 'CourseGrab was closed before this download finished.' : null,
+        errorMessage: i == 1 ? 'finder was closed before this download finished.' : null,
       ));
     }
     await tester.tap(find.text('History').first);

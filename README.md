@@ -1,4 +1,4 @@
-# CourseGrab
+# finder
 
 A desktop download manager for videos and playlists **you own or are authorized
 to access**. Built with Flutter from a single Dart codebase for **macOS (Apple
@@ -7,7 +7,7 @@ Silicon and Intel)** and **Windows x64**. It drives
 [FFmpeg](https://ffmpeg.org) for merging and audio extraction. Everything runs
 locally: there is no backend, telemetry or upload of any kind.
 
-> CourseGrab does not bypass DRM, paywalls, sign-in requirements or other access
+> finder does not bypass DRM, paywalls, sign-in requirements or other access
 > restrictions. Respect copyright and the terms of the platforms you use.
 
 ---
@@ -20,7 +20,7 @@ locally: there is no backend, telemetry or upload of any kind.
 | **Metadata** | `yt-dlp --dump-single-json --flat-playlist`, parsed off the UI isolate. Handles single videos, playlists, and partially unavailable playlists (private, deleted, members-only, live, nested playlists are flagged and can't be selected). |
 | **Quality** | Best, 2160p, 1440p, 1080p, 720p, 480p, 360p. For a single video, **only resolutions that actually exist** can be picked. For playlists, each video gets the best stream at or below your choice, and you're told when a video didn't have it (the resolution is checked against the finished file). |
 | **Formats** | MP4, MKV, or original container. Streams are merged/remuxed **without re-encoding**. Audio-only: best original audio (no re-encode) or MP3 (re-encoded, 320/192/128 kbps or VBR V0). |
-| **Download manager** | Queue with configurable concurrency (1–6), per-item progress, speed, size, ETA, stream index, queue position, reorder, pause/resume, cancel (removes partial files), retry, skip already-completed items, duplicate prevention. All numbers come from yt-dlp's real output; nothing is estimated by CourseGrab. |
+| **Download manager** | Queue with configurable concurrency (1–6), per-item progress, speed, size, ETA, stream index, queue position, reorder, pause/resume, cancel (removes partial files), retry, skip already-completed items, duplicate prevention. All numbers come from yt-dlp's real output; nothing is estimated by finder. |
 | **History** | SQLite-backed. Search, filter by status and date (today / 7 / 30 days / custom range), open file, show in folder, retry, remove records, detection of moved/deleted files. Downloads interrupted by quitting are marked *Interrupted* on next launch. |
 | **Settings** | Default folder, resolution, container, audio format/quality, concurrency, playlist numbering, skip completed, custom executable paths, theme (dark/light/system), logging level, notifications, system certificates. |
 | **Dependencies** | Detects yt-dlp and FFmpeg (custom path → app-managed → bundled → PATH → well-known locations), validates them, shows versions, and installs or updates verified official builds in one click. |
@@ -107,7 +107,7 @@ flutter analyze
 flutter test
 
 # macOS (on a Mac with Xcode)
-flutter build macos --release        # → build/macos/Build/Products/Release/CourseGrab.app
+flutter build macos --release        # → build/macos/Build/Products/Release/finder.app
 tool/package_macos.sh                # same, plus bundled deps + inside-out codesign
 
 # Windows (on Windows with Visual Studio 2022)
@@ -128,10 +128,10 @@ flutter build windows --release                            # CMake copies it to 
 
 # macOS: verified yt-dlp; bring an FFmpeg build you trust
 dart run tool/fetch_dependencies.dart --platform macos --ffmpeg /path/to/ffmpeg
-tool/package_macos.sh                                       # → CourseGrab.app/Contents/Resources/bin
+tool/package_macos.sh                                       # → finder.app/Contents/Resources/bin
 ```
 
-At runtime CourseGrab looks in `CourseGrab.app/Contents/Resources/bin` (macOS)
+At runtime finder looks in `finder.app/Contents/Resources/bin` (macOS)
 and `<install dir>\bin` (Windows).
 
 ## Dependency configuration
@@ -156,11 +156,11 @@ and `<install dir>\bin` (Windows).
   expected file name (`yt-dlp*`, `ffmpeg*`), executable bit or `.exe`, and a
   successful version probe. A configured custom path is never silently
   replaced.
-- **Update**: yt-dlp installed by CourseGrab can be updated in place. Copies
+- **Update**: yt-dlp installed by finder can be updated in place. Copies
   installed some other way should be updated by whatever installed them.
 - Managed binaries live in the app data folder: `~/Library/Application
-  Support/com.coursegrab.coursegrab/bin` on macOS and
-  `%APPDATA%\CourseGrab\CourseGrab\bin` on Windows.
+  Support/com.finder.finder/bin` on macOS and
+  `%APPDATA%\finder\finder\bin` on Windows.
 
 ## Troubleshooting
 
@@ -171,7 +171,7 @@ and `<install dir>\bin` (Windows).
 | *Secure connection failed* / `CERTIFICATE_VERIFY_FAILED` | Your network inspects HTTPS (common on managed work computers). Keep **Settings → Network → Use system certificates** enabled: yt-dlp then trusts the OS store (macOS Keychain roots exported to a PEM file; the Windows certificate store). Verification is never turned off. |
 | First check after installing yt-dlp is slow | Expected once (about 30 s) while the OS scans the new binary. |
 | *Format unavailable* | The video doesn't offer that format. Choose *Best available* or another container. For YouTube, newer yt-dlp versions may need an external JavaScript runtime to list all formats. See the yt-dlp docs. |
-| *Access restricted* | The content is private, members-only or needs sign-in. CourseGrab won't bypass that. |
+| *Access restricted* | The content is private, members-only or needs sign-in. finder won't bypass that. |
 | *Permission denied* | Choose a destination folder you can write to. |
 | Anything else | Settings → Diagnostics → **Open logs folder**. Logs redact your home path and credential-like URL parameters. |
 
@@ -204,13 +204,13 @@ and `<install dir>\bin` (Windows).
 | Command | Purpose |
 | --- | --- |
 | `flutter test` | Unit, widget, persistence, and mock-executable integration tests |
-| `dart run tool/smoke_test.dart <dir> [url]` | Real end-to-end check: installs verified yt-dlp, extracts metadata, downloads with CourseGrab's exact arguments (`SMOKE_REAL_ARGS=1` to skip the no-FFmpeg fallback) |
+| `dart run tool/smoke_test.dart <dir> [url]` | Real end-to-end check: installs verified yt-dlp, extracts metadata, downloads with finder's exact arguments (`SMOKE_REAL_ARGS=1` to skip the no-FFmpeg fallback) |
 | `flutter test tool/screenshots/render_screens_test.dart` | Renders every screen to `build/screenshots/*.png` with real fonts |
 | `python3 tool/generate_icons.py` | Regenerates the macOS and Windows app icons |
 
 ## License notes
 
 yt-dlp is released under the Unlicense. FFmpeg is LGPL/GPL depending on the
-build (the Windows builds CourseGrab installs are GPL, and their license file is
+build (the Windows builds finder installs are GPL, and their license file is
 saved next to the binaries). See **About → View all open-source licenses** for
 the Dart/Flutter packages.

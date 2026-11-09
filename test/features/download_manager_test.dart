@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:coursegrab/core/errors/app_error.dart';
-import 'package:coursegrab/features/downloads/domain/download_manager.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/download_task.dart';
-import 'package:coursegrab/models/history_record.dart';
-import 'package:coursegrab/models/media_info.dart';
-import 'package:coursegrab/services/ytdlp/ytdlp_output_parser.dart';
+import 'package:finder/core/errors/app_error.dart';
+import 'package:finder/features/downloads/domain/download_manager.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/download_task.dart';
+import 'package:finder/models/history_record.dart';
+import 'package:finder/models/media_info.dart';
+import 'package:finder/services/ytdlp/ytdlp_output_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/fakes.dart';

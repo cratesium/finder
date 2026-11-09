@@ -1,23 +1,23 @@
 import 'dart:async';
 
-import 'package:coursegrab/core/errors/app_error.dart';
-import 'package:coursegrab/features/history/data/history_repository.dart';
-import 'package:coursegrab/features/settings/application/dependency_controller.dart';
-import 'package:coursegrab/features/settings/data/settings_repository.dart';
-import 'package:coursegrab/models/app_settings.dart';
-import 'package:coursegrab/models/dependency_status.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/download_task.dart';
-import 'package:coursegrab/models/history_record.dart';
-import 'package:coursegrab/models/media_info.dart';
-import 'package:coursegrab/services/cancellation.dart';
-import 'package:coursegrab/services/directory_picker.dart';
-import 'package:coursegrab/services/downloader_service.dart';
-import 'package:coursegrab/services/file_opener_service.dart';
-import 'package:coursegrab/services/metadata_service.dart';
-import 'package:coursegrab/services/notification_service.dart';
-import 'package:coursegrab/services/trust_store_service.dart';
-import 'package:coursegrab/services/ytdlp/ytdlp_output_parser.dart';
+import 'package:finder/core/errors/app_error.dart';
+import 'package:finder/features/history/data/history_repository.dart';
+import 'package:finder/features/settings/application/dependency_controller.dart';
+import 'package:finder/features/settings/data/settings_repository.dart';
+import 'package:finder/models/app_settings.dart';
+import 'package:finder/models/dependency_status.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/download_task.dart';
+import 'package:finder/models/history_record.dart';
+import 'package:finder/models/media_info.dart';
+import 'package:finder/services/cancellation.dart';
+import 'package:finder/services/directory_picker.dart';
+import 'package:finder/services/downloader_service.dart';
+import 'package:finder/services/file_opener_service.dart';
+import 'package:finder/services/metadata_service.dart';
+import 'package:finder/services/notification_service.dart';
+import 'package:finder/services/trust_store_service.dart';
+import 'package:finder/services/ytdlp/ytdlp_output_parser.dart';
 
 MediaEntry entry(
   String id, {

@@ -1,9 +1,9 @@
-import 'package:coursegrab/features/history/data/history_repository.dart';
-import 'package:coursegrab/features/settings/data/settings_repository.dart';
-import 'package:coursegrab/models/app_settings.dart';
-import 'package:coursegrab/models/download_options.dart';
-import 'package:coursegrab/models/history_record.dart';
-import 'package:coursegrab/services/storage_service.dart';
+import 'package:finder/features/history/data/history_repository.dart';
+import 'package:finder/features/settings/data/settings_repository.dart';
+import 'package:finder/models/app_settings.dart';
+import 'package:finder/models/download_options.dart';
+import 'package:finder/models/history_record.dart';
+import 'package:finder/services/storage_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

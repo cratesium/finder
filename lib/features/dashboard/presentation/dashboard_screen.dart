@@ -169,7 +169,7 @@ class _IdleView extends ConsumerWidget {
             InlineBanner(
               tone: BannerTone.warning,
               title: 'yt-dlp is not set up',
-              message: 'CourseGrab uses yt-dlp to read and download media. Install it with one click in Settings.',
+              message: 'finder uses yt-dlp to read and download media. Install it with one click in Settings.',
               action: FilledButton(
                 onPressed: () => context.go(Routes.settings),
                 child: const Text('Open Settings'),
@@ -193,7 +193,7 @@ class _IdleView extends ConsumerWidget {
               icon: Icons.video_library_outlined,
               title: 'Start with a link',
               message:
-                  'Paste a single video or a whole playlist. CourseGrab reads its details first — nothing is downloaded until you choose.',
+                  'Paste a single video or a whole playlist. finder reads its details first — nothing is downloaded until you choose.',
             ),
           ),
         ],

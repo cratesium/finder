@@ -78,7 +78,7 @@ class AboutScreen extends ConsumerWidget {
                 const SectionLabel('Responsible use'),
                 Text(
                   'Only download content you own, have created, or have explicit permission to download. '
-                  'CourseGrab does not bypass DRM, paywalls, sign-in requirements or other access restrictions, '
+                  'finder does not bypass DRM, paywalls, sign-in requirements or other access restrictions, '
                   'and respects the terms of the platforms you use. Everything runs locally: no media, history '
                   'or usage data is uploaded anywhere.',
                   style: context.text.bodyMedium?.copyWith(color: c.textSecondary),

@@ -17,17 +17,17 @@ import 'models/app_settings.dart';
 
 final _log = Logger('app');
 
-class CourseGrabApp extends ConsumerStatefulWidget {
-  const CourseGrabApp({super.key, this.router});
+class FinderApp extends ConsumerStatefulWidget {
+  const FinderApp({super.key, this.router});
 
   /// Allows tests to inject a router with a custom initial location.
   final GoRouter? router;
 
   @override
-  ConsumerState<CourseGrabApp> createState() => _CourseGrabAppState();
+  ConsumerState<FinderApp> createState() => _FinderAppState();
 }
 
-class _CourseGrabAppState extends ConsumerState<CourseGrabApp> {
+class _FinderAppState extends ConsumerState<FinderApp> {
   late final GoRouter _router = widget.router ?? buildRouter();
   late final AppLifecycleListener _lifecycle;
   bool _exiting = false;

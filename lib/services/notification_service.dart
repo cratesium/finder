@@ -35,7 +35,7 @@ class DesktopNotificationService implements NotificationService {
       );
       const windows = WindowsInitializationSettings(
         appName: AppConfig.appName,
-        appUserModelId: 'CourseGrab.CourseGrab.Desktop.1',
+        appUserModelId: 'finder.finder.Desktop.1',
         guid: '6d6f9c3e-6a55-4b8e-9b62-5f1f7f0c2a41',
       );
       const settings = InitializationSettings(macOS: darwin, windows: windows);

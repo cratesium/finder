@@ -65,8 +65,8 @@ class PlatformInfo {
 
   /// Directories in which bundled binaries are looked up inside a packaged app.
   ///
-  /// * macOS: `CourseGrab.app/Contents/Resources/bin`
-  /// * Windows: `<install dir>\bin` next to `coursegrab.exe`
+  /// * macOS: `finder.app/Contents/Resources/bin`
+  /// * Windows: `<install dir>\bin` next to `finder.exe`
   List<String> get bundledBinaryDirs {
     final exeDir = p.dirname(resolvedExecutable);
     if (isMacOS) {
