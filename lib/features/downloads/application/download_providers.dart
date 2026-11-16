@@ -15,8 +15,7 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
     maxConcurrent: settings.maxConcurrentDownloads,
     skipCompleted: settings.skipCompleted,
     notificationsEnabled: settings.notificationsEnabled,
-    resolutionProbe: (ffmpeg, file) async =>
-        (await ref.read(ffmpegServiceProvider).probe(ffmpeg, file))?.res,
+    resolutionProbe: (ffmpeg, file) async => (await ref.read(ffmpegServiceProvider).probe(ffmpeg, file))?.res,
     tools: () async {
       final snap = await ref.read(dependencyProvider.future);
       return ResolvedTools(
@@ -49,8 +48,8 @@ class TasksController extends Notifier<List<DownloadTask>> {
 
 final tasksProvider = NotifierProvider<TasksController, List<DownloadTask>>(TasksController.new);
 
-final activeTaskCountProvider = Provider<int>(
-    (ref) => ref.watch(tasksProvider).where((t) => t.status.isActive).length);
+final activeTaskCountProvider = Provider<int>((ref) => ref.watch(tasksProvider).where((t) => t.status.isActive).length);
 
 final queuedTaskCountProvider = Provider<int>(
-    (ref) => ref.watch(tasksProvider).where((t) => t.status == TaskStatus.queued).length);
+  (ref) => ref.watch(tasksProvider).where((t) => t.status == TaskStatus.queued).length,
+);

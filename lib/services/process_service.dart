@@ -10,12 +10,7 @@ final _log = Logger('process');
 
 /// Outcome of a short-lived process run via [ProcessService.run].
 class ProcessOutcome {
-  const ProcessOutcome({
-    required this.exitCode,
-    required this.stdout,
-    required this.stderr,
-    this.timedOut = false,
-  });
+  const ProcessOutcome({required this.exitCode, required this.stdout, required this.stderr, this.timedOut = false});
 
   final int exitCode;
   final String stdout;
@@ -26,32 +21,47 @@ class ProcessOutcome {
 }
 
 /// A running child process with line-oriented output streams.
-class ManagedProcess {
-  ManagedProcess._(this._service, this._process, this.executable)
-      : stdoutLines = _process.stdout
-            .transform(const Utf8Decoder(allowMalformed: true))
-            .transform(const LineSplitter())
-            .asBroadcastStream(),
-        stderrLines = _process.stderr
-            .transform(const Utf8Decoder(allowMalformed: true))
-            .transform(const LineSplitter())
-            .asBroadcastStream();
-
-  final ProcessService _service;
-  final Process _process;
-  final String executable;
-  final Stream<String> stdoutLines;
-  final Stream<String> stderrLines;
-  bool _terminating = false;
-
-  int get pid => _process.pid;
-  Future<int> get exitCode => _process.exitCode;
-  bool get isTerminating => _terminating;
+abstract interface class ManagedProcess {
+  int get pid;
+  Stream<String> get stdoutLines;
+  Stream<String> get stderrLines;
+  Future<int> get exitCode;
+  bool get isTerminating;
 
   /// Stops the process and its descendants.
   ///
   /// A polite interrupt is sent first so yt-dlp can stop FFmpeg and keep its
   /// partial-download state; after [grace] the whole tree is killed.
+  Future<void> terminate({Duration grace = AppConfig.processKillGrace});
+}
+
+class _NativeManagedProcess implements ManagedProcess {
+  _NativeManagedProcess(this._service, this._process)
+    : stdoutLines = _process.stdout
+          .transform(const Utf8Decoder(allowMalformed: true))
+          .transform(const LineSplitter())
+          .asBroadcastStream(),
+      stderrLines = _process.stderr
+          .transform(const Utf8Decoder(allowMalformed: true))
+          .transform(const LineSplitter())
+          .asBroadcastStream();
+
+  final ProcessService _service;
+  final Process _process;
+  @override
+  final Stream<String> stdoutLines;
+  @override
+  final Stream<String> stderrLines;
+  bool _terminating = false;
+
+  @override
+  int get pid => _process.pid;
+  @override
+  Future<int> get exitCode => _process.exitCode;
+  @override
+  bool get isTerminating => _terminating;
+
+  @override
   Future<void> terminate({Duration grace = AppConfig.processKillGrace}) async {
     if (_terminating) {
       await exitCode.timeout(grace * 2, onTimeout: () => -1);
@@ -78,12 +88,12 @@ class ProcessService {
   int get liveCount => _live.length;
 
   Map<String, String> _environment(Map<String, String>? extra) => {
-        // Force UTF-8 output from Python-based tools (yt-dlp) on every OS.
-        'PYTHONIOENCODING': 'utf-8',
-        'PYTHONUTF8': '1',
-        'PYTHONUNBUFFERED': '1',
-        ...?extra,
-      };
+    // Force UTF-8 output from Python-based tools (yt-dlp) on every OS.
+    'PYTHONIOENCODING': 'utf-8',
+    'PYTHONUTF8': '1',
+    'PYTHONUNBUFFERED': '1',
+    ...?extra,
+  };
 
   /// Starts a long-running process.
   Future<ManagedProcess> start(
@@ -102,11 +112,13 @@ class ProcessService {
       mode: ProcessStartMode.normal,
     );
     _live[process.pid] = process;
-    unawaited(process.exitCode.then((code) {
-      _live.remove(process.pid);
-      _log.fine('pid ${process.pid} exited with $code');
-    }));
-    return ManagedProcess._(this, process, executable);
+    unawaited(
+      process.exitCode.then((code) {
+        _live.remove(process.pid);
+        _log.fine('pid ${process.pid} exited with $code');
+      }),
+    );
+    return _NativeManagedProcess(this, process);
   }
 
   /// Runs a process to completion, collecting output, with a timeout.
@@ -117,32 +129,22 @@ class ProcessService {
     String? workingDirectory,
     Map<String, String>? environment,
   }) async {
-    final proc = await start(
-      executable,
-      arguments,
-      workingDirectory: workingDirectory,
-      environment: environment,
-    );
+    final proc = await start(executable, arguments, workingDirectory: workingDirectory, environment: environment);
     final out = StringBuffer();
     final err = StringBuffer();
     final outDone = proc.stdoutLines.forEach(out.writeln);
     final errDone = proc.stderrLines.forEach(err.writeln);
     var timedOut = false;
-    final code = await proc.exitCode.timeout(timeout, onTimeout: () async {
-      timedOut = true;
-      await proc.terminate(grace: const Duration(seconds: 1));
-      return -1;
-    });
-    await Future.wait([outDone, errDone]).timeout(
-      const Duration(seconds: 2),
-      onTimeout: () => const [],
+    final code = await proc.exitCode.timeout(
+      timeout,
+      onTimeout: () async {
+        timedOut = true;
+        await proc.terminate(grace: const Duration(seconds: 1));
+        return -1;
+      },
     );
-    return ProcessOutcome(
-      exitCode: code,
-      stdout: out.toString(),
-      stderr: err.toString(),
-      timedOut: timedOut,
-    );
+    await Future.wait([outDone, errDone]).timeout(const Duration(seconds: 2), onTimeout: () => const []);
+    return ProcessOutcome(exitCode: code, stdout: out.toString(), stderr: err.toString(), timedOut: timedOut);
   }
 
   /// Terminates [process] and any child processes it spawned.
@@ -163,9 +165,7 @@ class ProcessService {
     // POSIX: SIGINT lets yt-dlp shut down FFmpeg and keep .part files.
     final descendants = await _descendants(pid);
     process.kill(ProcessSignal.sigint);
-    final exited = await process.exitCode
-        .then((_) => true)
-        .timeout(grace, onTimeout: () => false);
+    final exited = await process.exitCode.then((_) => true).timeout(grace, onTimeout: () => false);
     if (!exited) {
       _log.info('pid $pid did not exit after SIGINT; sending SIGKILL');
       process.kill(ProcessSignal.sigkill);

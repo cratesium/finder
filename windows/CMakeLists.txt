@@ -109,7 +109,7 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
 
 # Optionally bundle verified yt-dlp / FFmpeg binaries next to the executable.
 # Populate third_party/windows/bin with `dart run tool/fetch_dependencies.dart`.
-# finder looks for them in "<install dir>\\bin" at runtime.
+# Finder looks for them in "<install dir>\\bin" at runtime.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/windows/bin/"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
   COMPONENT Runtime

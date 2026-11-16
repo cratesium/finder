@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import '../core/config/app_config.dart';
 import '../core/errors/app_error.dart';
 import '../core/errors/error_classifier.dart';
+import '../models/download_options.dart';
 import '../models/media_info.dart';
 import 'cancellation.dart';
 import 'process_service.dart';
@@ -17,11 +18,13 @@ final _log = Logger('metadata');
 
 /// Extracts video/playlist metadata without downloading media.
 abstract interface class MetadataService {
+  /// [ytDlpPath] is ignored by engines that don't run yt-dlp (iOS).
   Future<MediaInfo> fetch(
     String url, {
     required String ytDlpPath,
     CancellationToken? cancel,
     YtDlpNetworkConfig network = YtDlpNetworkConfig.none,
+    FetchScope scope = FetchScope.auto,
   });
 }
 
@@ -37,13 +40,14 @@ class YtDlpMetadataService implements MetadataService {
     required String ytDlpPath,
     CancellationToken? cancel,
     YtDlpNetworkConfig network = YtDlpNetworkConfig.none,
+    FetchScope scope = FetchScope.auto,
   }) async {
-    _log.info('extracting metadata for $url');
+    _log.info('extracting metadata (${scope.name})');
     final ManagedProcess proc;
     try {
       proc = await _processes.start(
         ytDlpPath,
-        YtDlpArgs.metadata(url, network: network.arguments),
+        YtDlpArgs.metadata(url, network: network.arguments, scope: scope),
         environment: network.environment,
       );
     } catch (e) {
@@ -58,20 +62,22 @@ class YtDlpMetadataService implements MetadataService {
 
     var cancelled = false;
     var timedOut = false;
-    unawaited(cancel?.whenCancelled.then((_) {
-      cancelled = true;
-      return proc.terminate(grace: const Duration(seconds: 1));
-    }));
-
-    final code = await proc.exitCode.timeout(timeout, onTimeout: () async {
-      timedOut = true;
-      await proc.terminate(grace: const Duration(seconds: 1));
-      return -1;
-    });
-    await Future.wait([outDone, errDone]).timeout(
-      const Duration(seconds: 3),
-      onTimeout: () => const [],
+    unawaited(
+      cancel?.whenCancelled.then((_) {
+        cancelled = true;
+        return proc.terminate(grace: const Duration(seconds: 1));
+      }),
     );
+
+    final code = await proc.exitCode.timeout(
+      timeout,
+      onTimeout: () async {
+        timedOut = true;
+        await proc.terminate(grace: const Duration(seconds: 1));
+        return -1;
+      },
+    );
+    await Future.wait([outDone, errDone]).timeout(const Duration(seconds: 3), onTimeout: () => const []);
 
     if (cancelled) throw AppError.of(AppErrorKind.cancelled);
     if (timedOut) throw AppError.of(AppErrorKind.timeout, detail: 'metadata extraction');
@@ -96,8 +102,6 @@ class YtDlpMetadataService implements MetadataService {
 
   /// Parses JSON off the UI isolate. Kept as a separate static function so
   /// the closure only captures sendable values.
-  static Future<MediaInfo> parseInIsolate(String json, String url) => Isolate.run(
-        () => MetadataParser.parseJson(json, sourceUrl: url),
-        debugName: 'metadata-parse',
-      );
+  static Future<MediaInfo> parseInIsolate(String json, String url) =>
+      Isolate.run(() => MetadataParser.parseJson(json, sourceUrl: url), debugName: 'metadata-parse');
 }

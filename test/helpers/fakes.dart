@@ -26,24 +26,29 @@ MediaEntry entry(
   EntryAvailability availability = EntryAvailability.available,
   Duration? duration = const Duration(minutes: 3),
   List<MediaFormat> formats = const [],
-}) =>
-    MediaEntry(
-      id: id,
-      title: title ?? 'Video $id',
-      url: 'https://www.youtube.com/watch?v=$id',
-      extractor: 'Youtube',
-      playlistIndex: index,
-      duration: duration,
-      availability: availability,
-      formats: formats,
-    );
+}) => MediaEntry(
+  id: id,
+  title: title ?? 'Video $id',
+  url: 'https://www.youtube.com/watch?v=$id',
+  extractor: 'Youtube',
+  playlistIndex: index,
+  duration: duration,
+  availability: availability,
+  formats: formats,
+);
 
-DownloadRequest request(String id, {String dir = '/tmp/cg-test', DownloadOptions? options, String? playlist}) =>
-    DownloadRequest(
-      entry: entry(id),
-      options: options ?? DownloadOptions(destinationDir: dir),
-      playlistTitle: playlist,
-    );
+DownloadRequest request(
+  String id, {
+  String dir = '/tmp/cg-test',
+  DownloadOptions? options,
+  String? playlist,
+  String? batch,
+}) => DownloadRequest(
+  entry: entry(id),
+  options: options ?? DownloadOptions(destinationDir: dir),
+  playlistTitle: playlist,
+  batchId: batch,
+);
 
 /// In-memory history repository.
 class FakeHistoryRepository implements HistoryRepository {
@@ -71,8 +76,7 @@ class FakeHistoryRepository implements HistoryRepository {
         return false;
       }
       return true;
-    }).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
   }
 
   @override
@@ -158,11 +162,18 @@ class FakeMetadataService implements MetadataService {
   FakeMetadataService(this.result);
   FutureOr<MediaInfo> Function(String url) result;
   int calls = 0;
+  FetchScope? lastScope;
 
   @override
-  Future<MediaInfo> fetch(String url,
-      {required String ytDlpPath, CancellationToken? cancel, YtDlpNetworkConfig network = YtDlpNetworkConfig.none}) async {
+  Future<MediaInfo> fetch(
+    String url, {
+    required String ytDlpPath,
+    CancellationToken? cancel,
+    YtDlpNetworkConfig network = YtDlpNetworkConfig.none,
+    FetchScope scope = FetchScope.auto,
+  }) async {
     calls++;
+    lastScope = scope;
     return result(url);
   }
 }
@@ -206,7 +217,7 @@ const readySnapshot = DependencySnapshot(
     state: DependencyState.ready,
     path: '/fake/ffmpeg',
     version: '7.1',
-    source: DependencySource.system,
+    source: DependencySource.bundled,
   ),
 );
 

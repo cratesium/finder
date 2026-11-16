@@ -19,11 +19,9 @@ enum TaskStatus {
   const TaskStatus(this.label);
   final String label;
 
-  bool get isActive =>
-      this == preparing || this == downloading || this == processing;
+  bool get isActive => this == preparing || this == downloading || this == processing;
   bool get isWaiting => this == queued;
-  bool get isTerminal =>
-      this == completed || this == skipped || this == failed || this == cancelled;
+  bool get isTerminal => this == completed || this == skipped || this == failed || this == cancelled;
 
   /// Tasks in these states block an identical new task from being created.
   bool get blocksDuplicates => !isTerminal;
@@ -31,15 +29,15 @@ enum TaskStatus {
 
 /// What the user asked to download.
 class DownloadRequest {
-  const DownloadRequest({
-    required this.entry,
-    required this.options,
-    this.playlistTitle,
-  });
+  const DownloadRequest({required this.entry, required this.options, this.playlistTitle, this.batchId});
 
   final MediaEntry entry;
   final DownloadOptions options;
   final String? playlistTitle;
+
+  /// Groups the items of one playlist download so progress and a summary can
+  /// be shown for the playlist as a whole. Null for single videos.
+  final String? batchId;
 
   /// Destination directory including the playlist sub-folder.
   String get effectiveDirectory {
@@ -50,11 +48,10 @@ class DownloadRequest {
   }
 
   /// Stable deduplication key: same video + same output type + same folder.
-  String get dedupeKey =>
-      '${entry.stableId}|${options.outputKind}|${PathUtils.normalizeDir(effectiveDirectory)}';
+  String get dedupeKey => '${entry.stableId}|${options.outputKind}|${PathUtils.normalizeDir(effectiveDirectory)}';
 }
 
-/// Live progress reported by yt-dlp. Values are never estimated by finder.
+/// Live progress reported by yt-dlp. Values are never estimated by Finder.
 class DownloadProgress {
   const DownloadProgress({
     this.downloadedBytes,
@@ -144,21 +141,20 @@ class DownloadTask {
     DateTime? finishedAt,
     bool clearFinishedAt = false,
     int? attempts,
-  }) =>
-      DownloadTask(
-        id: id,
-        request: request,
-        createdAt: createdAt,
-        status: status ?? this.status,
-        progress: progress ?? this.progress,
-        error: clearError ? null : (error ?? this.error),
-        filePath: filePath ?? this.filePath,
-        fileSize: fileSize ?? this.fileSize,
-        actualResolution: actualResolution ?? this.actualResolution,
-        actualExtension: actualExtension ?? this.actualExtension,
-        notice: clearNotice ? null : (notice ?? this.notice),
-        startedAt: startedAt ?? this.startedAt,
-        finishedAt: clearFinishedAt ? null : (finishedAt ?? this.finishedAt),
-        attempts: attempts ?? this.attempts,
-      );
+  }) => DownloadTask(
+    id: id,
+    request: request,
+    createdAt: createdAt,
+    status: status ?? this.status,
+    progress: progress ?? this.progress,
+    error: clearError ? null : (error ?? this.error),
+    filePath: filePath ?? this.filePath,
+    fileSize: fileSize ?? this.fileSize,
+    actualResolution: actualResolution ?? this.actualResolution,
+    actualExtension: actualExtension ?? this.actualExtension,
+    notice: clearNotice ? null : (notice ?? this.notice),
+    startedAt: startedAt ?? this.startedAt,
+    finishedAt: clearFinishedAt ? null : (finishedAt ?? this.finishedAt),
+    attempts: attempts ?? this.attempts,
+  );
 }

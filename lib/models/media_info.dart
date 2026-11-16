@@ -14,25 +14,22 @@ enum EntryAvailability {
   bool get isDownloadable => this == EntryAvailability.available;
 
   String get label => switch (this) {
-        EntryAvailability.available => 'Available',
-        EntryAvailability.unavailable => 'Unavailable',
-        EntryAvailability.private => 'Private',
-        EntryAvailability.needsAuth => 'Requires sign-in',
-        EntryAvailability.live => 'Live stream',
-        EntryAvailability.nestedPlaylist => 'Nested playlist',
-      };
+    EntryAvailability.available => 'Available',
+    EntryAvailability.unavailable => 'Unavailable',
+    EntryAvailability.private => 'Private',
+    EntryAvailability.needsAuth => 'Requires sign-in',
+    EntryAvailability.live => 'Live stream',
+    EntryAvailability.nestedPlaylist => 'Nested playlist',
+  };
 
   String get explanation => switch (this) {
-        EntryAvailability.available => '',
-        EntryAvailability.unavailable => 'This video was removed or is blocked.',
-        EntryAvailability.private => 'This video is private.',
-        EntryAvailability.needsAuth =>
-          'This video requires signing in or a membership.',
-        EntryAvailability.live =>
-          'Live streams aren\'t supported. Download it after the stream ends.',
-        EntryAvailability.nestedPlaylist =>
-          'This item is itself a playlist. Paste its link separately.',
-      };
+    EntryAvailability.available => '',
+    EntryAvailability.unavailable => 'This video was removed or is blocked.',
+    EntryAvailability.private => 'This video is private.',
+    EntryAvailability.needsAuth => 'This video requires signing in or a membership.',
+    EntryAvailability.live => 'Live streams aren\'t supported. Download it after the stream ends.',
+    EntryAvailability.nestedPlaylist => 'This item is itself a playlist. Paste its link separately.',
+  };
 }
 
 /// A single downloadable stream description.
@@ -61,8 +58,7 @@ class MediaFormat {
   final double? bitrate;
   final String? note;
 
-  bool get hasVideo =>
-      vcodec != 'none' && (vcodec != null || (height ?? 0) > 0);
+  bool get hasVideo => vcodec != 'none' && (vcodec != null || (height ?? 0) > 0);
   bool get hasAudio => acodec != null && acodec != 'none';
 
   /// Resolution measured on the short side (handles vertical video), matching
@@ -167,8 +163,7 @@ class MediaInfo {
 
   int get totalCount => entries.length;
 
-  int get downloadableCount =>
-      entries.where((e) => e.availability.isDownloadable).length;
+  int get downloadableCount => entries.where((e) => e.availability.isDownloadable).length;
 
   int get unavailableCount => totalCount - downloadableCount;
 

@@ -7,6 +7,7 @@ import '../core/config/app_config.dart';
 import '../core/errors/app_error.dart';
 import '../core/utils/platform_info.dart';
 import '../models/dependency_status.dart';
+import 'android/android_toolchain.dart';
 import 'binary_installer.dart';
 import 'ffmpeg_service.dart';
 import 'process_service.dart';
@@ -15,29 +16,47 @@ final _log = Logger('dependencies');
 
 /// Locates, validates, installs and updates yt-dlp and FFmpeg.
 ///
-/// Resolution order (first valid wins):
+/// Finder ships both tools inside the app, so nothing has to be installed on
+/// the computer and tools installed on the system are never used. Resolution
+/// order (first valid wins):
 /// 1. Custom path configured in Settings (never silently replaced).
-/// 2. Copy installed by finder in the app data `bin` folder.
-/// 3. Copy bundled inside the packaged application.
-/// 4. `PATH` and well-known install locations.
+/// 2. A newer yt-dlp downloaded by Finder's in-app "Update" (app data `bin`).
+/// 3. The copies bundled inside the application package.
+/// 4. macOS only: a private copy of the bundled engine in the app data folder,
+///    made when macOS refuses to run the bundled copy in place (a quarantined
+///    app opened from Downloads runs from a read-only, translocated location).
+///
+/// On Android both tools are embedded in the APK and run through
+/// [AndroidToolchain]; they are always "bundled".
 class DependencyManager {
   DependencyManager({
     required this.platform,
     required this._processes,
     required this.managedBinDir,
+    this.android,
     BinaryInstaller? installer,
   }) : _installer = installer ?? BinaryInstaller();
 
   final PlatformInfo platform;
   final ProcessService _processes;
   final String managedBinDir;
+  final AndroidToolchain? android;
   final BinaryInstaller _installer;
+
+  bool get _isAndroid => platform.isAndroid && android != null;
+
+  /// Private copy of the bundled engine (macOS fallback, see class docs).
+  String get engineCopyDir => p.join(p.dirname(managedBinDir), 'engine');
+
+  Future<void>? _quarantineCleared;
+  Future<String?>? _engineCopy;
 
   static final _ytDlpVersion = RegExp(r'^\d{4}\.\d{2}\.\d{2}(?:\.\d+)?');
 
   String executableName(DependencyKind kind) => '${kind.executableBase}${platform.exeSuffix}';
 
-  /// yt-dlp is installed as the official "onedir" build on macOS and Windows.
+  /// yt-dlp is installed as the official "onedir" build on macOS, Windows and
+  /// Linux.
   /// The single-file builds unpack themselves on every launch, which the OS
   /// re-scans each time (~30 s per call on macOS).
   ({String asset, String folder, String executable})? get ytDlpOnedir {
@@ -55,6 +74,14 @@ class DependencyManager {
             : DependencySources.ytDlpWindowsX64Asset,
         folder: DependencySources.ytDlpWindowsFolder,
         executable: DependencySources.ytDlpWindowsExecutable,
+      );
+    }
+    if (platform.isLinux) {
+      final arm = platform.arch == HostArch.arm64;
+      return (
+        asset: arm ? DependencySources.ytDlpLinuxArm64Asset : DependencySources.ytDlpLinuxX64Asset,
+        folder: DependencySources.ytDlpLinuxFolder,
+        executable: arm ? DependencySources.ytDlpLinuxArm64Executable : DependencySources.ytDlpLinuxX64Executable,
       );
     }
     return null;
@@ -88,12 +115,6 @@ class DependencyManager {
       if (onedir != null) addPath(p.join(d, onedir), DependencySource.bundled);
       add(d, DependencySource.bundled);
     }
-    for (final d in platform.pathDirs) {
-      add(d, DependencySource.system);
-    }
-    for (final d in platform.conventionalBinaryDirs) {
-      add(d, DependencySource.system);
-    }
     return out;
   }
 
@@ -106,31 +127,149 @@ class DependencyManager {
   }
 
   Future<DependencyStatus> resolve(DependencyKind kind, {String? customPath}) async {
+    if (_isAndroid) return _resolveAndroid(kind);
     if (customPath != null && customPath.trim().isNotEmpty) {
       return validate(kind, customPath.trim(), DependencySource.custom);
     }
+    if (platform.isMacOS) await (_quarantineCleared ??= _clearBundledQuarantine());
+    DependencyStatus? bundledFailure;
     for (final (path, source) in candidates(kind)) {
       if (!await File(path).exists()) continue;
       final status = await validate(kind, path, source);
       if (status.isReady) return status;
-      _log.info('skipping invalid ${kind.label} candidate (${source.name})');
+      _log.warning('skipping invalid ${kind.label} candidate (${source.name}): ${status.message}');
+      if (source == DependencySource.bundled) bundledFailure ??= status;
     }
-    return DependencyStatus.missing(kind, message: '${kind.label} was not found.');
+    if (platform.isMacOS) {
+      final copy = await (_engineCopy ??= _copyBundledEngine());
+      if (copy != null) {
+        final onedir = kind == DependencyKind.ytDlp ? _onedirRelative() : null;
+        final path = p.join(copy, onedir ?? executableName(kind));
+        if (await File(path).exists()) {
+          final status = await validate(kind, path, DependencySource.bundled);
+          if (status.isReady) return status;
+          _log.warning('private copy of ${kind.label} failed: ${status.message}');
+          bundledFailure ??= status;
+        }
+      }
+    }
+    if (bundledFailure != null) {
+      return DependencyStatus(
+        kind: kind,
+        state: DependencyState.invalid,
+        path: bundledFailure.path,
+        source: DependencySource.bundled,
+        message: 'The built-in ${kind.label} couldn\'t start: ${bundledFailure.message}',
+      );
+    }
+    return DependencyStatus.missing(
+      kind,
+      message: '${kind.label} is missing from this installation of ${AppConfig.appName}.',
+    );
+  }
+
+  String? get _bundledDir {
+    for (final d in platform.bundledBinaryDirs) {
+      if (Directory(d).existsSync()) return d;
+    }
+    return null;
+  }
+
+  /// Apps downloaded from the internet carry a quarantine flag that macOS
+  /// copies onto every file inside them; Gatekeeper then refuses to start the
+  /// embedded tools. The user already approved the app itself, so the flag is
+  /// removed from the engine inside it (best effort: the app may be read-only).
+  Future<void> _clearBundledQuarantine() async {
+    final dir = _bundledDir;
+    if (dir == null) return;
+    try {
+      await Process.run('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', dir], runInShell: false);
+    } catch (e) {
+      _log.fine('could not clear quarantine on the built-in engine', e);
+    }
+  }
+
+  /// Copies the bundled engine into [engineCopyDir] without the quarantine
+  /// flag. Reused across launches until the app's engine changes.
+  Future<String?> _copyBundledEngine() async {
+    final src = _bundledDir;
+    if (src == null) return null;
+    try {
+      final stamp = await _bundleStamp(src);
+      final dest = Directory(engineCopyDir);
+      final stampFile = File(p.join(dest.path, '.source'));
+      if (await stampFile.exists() && await stampFile.readAsString() == stamp) return dest.path;
+
+      _log.info('copying the built-in engine to the app data folder');
+      final staging = Directory('${dest.path}.tmp');
+      if (await staging.exists()) await staging.delete(recursive: true);
+      final r = await Process.run('/usr/bin/ditto', ['--noqtn', src, staging.path], runInShell: false);
+      if (r.exitCode != 0) {
+        _log.warning('copying the built-in engine failed: ${r.stderr}');
+        if (await staging.exists()) await staging.delete(recursive: true);
+        return null;
+      }
+      await Process.run('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', staging.path], runInShell: false);
+      await File(p.join(staging.path, '.source')).writeAsString(stamp, flush: true);
+      if (await dest.exists()) await dest.delete(recursive: true);
+      await staging.rename(dest.path);
+      return dest.path;
+    } catch (e) {
+      _log.warning('copying the built-in engine failed', e);
+      return null;
+    }
+  }
+
+  /// Identifies the bundled engine build (changes when the app is updated).
+  Future<String> _bundleStamp(String dir) async {
+    final parts = <String>[];
+    for (final rel in [?_onedirRelative(), executableName(DependencyKind.ffmpeg)]) {
+      final f = File(p.join(dir, rel));
+      if (!await f.exists()) continue;
+      final st = await f.stat();
+      parts.add('$rel:${st.size}:${st.modified.millisecondsSinceEpoch}');
+    }
+    return parts.join('|');
+  }
+
+  Future<DependencyStatus> _resolveAndroid(DependencyKind kind) async {
+    DependencyStatus failed(String why) => DependencyStatus(
+      kind: kind,
+      state: DependencyState.invalid,
+      path: kind == DependencyKind.ytDlp ? AndroidBundled.ytDlpPath : AndroidBundled.ffmpegPath,
+      source: DependencySource.bundled,
+      message: why,
+    );
+    try {
+      final String? version;
+      if (kind == DependencyKind.ytDlp) {
+        final r = await _processes.run(AndroidBundled.ytDlpPath, const [
+          '--ignore-config',
+          '--version',
+        ], timeout: AppConfig.firstLaunchProbeTimeout);
+        if (!r.ok) return failed('The embedded yt-dlp failed to start (exit ${r.exitCode}).');
+        version = _ytDlpVersion.firstMatch(r.stdout.trim())?.group(0);
+      } else {
+        final out = await android!.ffmpegVersion();
+        version = out == null ? null : FfmpegService.parseVersion(out);
+      }
+      return DependencyStatus(
+        kind: kind,
+        state: DependencyState.ready,
+        path: kind == DependencyKind.ytDlp ? AndroidBundled.ytDlpPath : AndroidBundled.ffmpegPath,
+        version: version ?? 'bundled',
+        source: DependencySource.bundled,
+      );
+    } catch (e) {
+      _log.warning('embedded ${kind.label} unavailable', e);
+      return failed('The embedded ${kind.label} could not be started.');
+    }
   }
 
   /// Verifies that [path] is a real, runnable [kind] executable.
-  Future<DependencyStatus> validate(
-    DependencyKind kind,
-    String path,
-    DependencySource source,
-  ) async {
-    DependencyStatus invalid(String why) => DependencyStatus(
-          kind: kind,
-          state: DependencyState.invalid,
-          path: path,
-          source: source,
-          message: why,
-        );
+  Future<DependencyStatus> validate(DependencyKind kind, String path, DependencySource source) async {
+    DependencyStatus invalid(String why) =>
+        DependencyStatus(kind: kind, state: DependencyState.invalid, path: path, source: source, message: why);
 
     if (!p.isAbsolute(path)) return invalid('The path must be absolute.');
     final type = await FileSystemEntity.type(path, followLinks: true);
@@ -160,8 +299,11 @@ class DependencyManager {
     try {
       // The first launch of a freshly installed binary can be slow while
       // macOS scans it; allow for that once.
-      outcome = await _processes.run(path, versionArgs,
-          timeout: kind == DependencyKind.ytDlp ? AppConfig.firstLaunchProbeTimeout : AppConfig.probeTimeout);
+      outcome = await _processes.run(
+        path,
+        versionArgs,
+        timeout: kind == DependencyKind.ytDlp ? AppConfig.firstLaunchProbeTimeout : AppConfig.probeTimeout,
+      );
     } on ProcessException catch (e) {
       return invalid('The file could not be executed (${e.message}).');
     }
@@ -187,39 +329,34 @@ class DependencyManager {
         );
       }
     }
-    return DependencyStatus(
-      kind: kind,
-      state: DependencyState.ready,
-      path: path,
-      version: version,
-      source: source,
-    );
+    return DependencyStatus(kind: kind, state: DependencyState.ready, path: path, version: version, source: source);
   }
 
-  /// Whether finder can download a verified official build on this OS.
+  /// Whether Finder can download a verified official build on this OS.
   bool canInstall(DependencyKind kind) {
-    if (kind == DependencyKind.ytDlp) return platform.isMacOS || platform.isWindows;
+    if (kind == DependencyKind.ytDlp) {
+      return platform.isMacOS || platform.isWindows || platform.isLinux || _isAndroid;
+    }
     // FFmpeg's project only publishes source; yt-dlp's FFmpeg-Builds provides
-    // checksummed Windows binaries. No equivalent official macOS build exists.
-    return platform.isWindows;
+    // checksummed Windows and Linux binaries. On macOS the verified build is
+    // bundled at packaging time (tool/fetch_dependencies.dart).
+    return platform.isWindows || platform.isLinux;
   }
 
   String guidance(DependencyKind kind) {
+    const reinstall =
+        '${AppConfig.appName} ships with yt-dlp and FFmpeg built in. '
+        'If one is missing, the installation is incomplete: reinstall ${AppConfig.appName}.';
+    if (_isAndroid) return reinstall;
     if (kind == DependencyKind.ytDlp) {
-      return 'Click "Install" to download the official yt-dlp release from GitHub. '
-          'It is verified against the release\'s SHA-256 checksums before use. '
-          'You can also download it yourself from ${DependencySources.ytDlpHomepage} '
-          'and choose the file.';
+      return '$reinstall You can also click "Install" to download the official, '
+          'SHA-256-verified yt-dlp release into the app.';
     }
-    if (platform.isWindows) {
-      return 'Click "Install" to download a verified FFmpeg build from the official '
-          'yt-dlp/FFmpeg-Builds release (GPL). Alternatively choose an existing ffmpeg.exe.';
+    if (platform.isWindows || platform.isLinux) {
+      return '$reinstall You can also click "Install" to download a verified FFmpeg '
+          'build from the official yt-dlp/FFmpeg-Builds release (GPL).';
     }
-    return 'FFmpeg is needed to merge video and audio. Download a macOS build '
-        'linked from ${DependencySources.ffmpegHomepage}, place ffmpeg and ffprobe '
-        'in a folder, then click "Choose file" and select ffmpeg. If you already '
-        'use a package manager, finder detects ffmpeg in /opt/homebrew/bin, '
-        '/usr/local/bin and /opt/local/bin automatically.';
+    return reinstall;
   }
 
   /// Installs or updates [kind] into [managedBinDir].
@@ -227,16 +364,28 @@ class DependencyManager {
     if (!canInstall(kind)) {
       throw AppError(AppErrorKind.missingDependency, guidance(kind));
     }
+    if (_isAndroid) {
+      onProgress?.call(null, 'Updating yt-dlp');
+      final r = await android!.updateYtDlp();
+      _log.info('embedded yt-dlp update: $r');
+      final status = await resolve(kind);
+      if (!status.isReady) {
+        throw AppError(AppErrorKind.missingDependency, 'yt-dlp failed after updating: ${status.message}');
+      }
+      return status;
+    }
     await Directory(managedBinDir).create(recursive: true);
     if (kind == DependencyKind.ytDlp) {
       await _installYtDlpOnedir(onProgress);
     } else {
-      await _installFfmpegWindows(onProgress);
+      await _installFfmpegBuild(onProgress);
     }
     final status = await validate(kind, managedPath(kind), DependencySource.managed);
     if (!status.isReady) {
-      throw AppError(AppErrorKind.missingDependency,
-          'The installed ${kind.label} failed validation: ${status.message}');
+      throw AppError(
+        AppErrorKind.missingDependency,
+        'The installed ${kind.label} failed validation: ${status.message}',
+      );
     }
     _log.info('installed ${kind.label} ${status.version}');
     return status;
@@ -273,10 +422,13 @@ class DependencyManager {
     }
   }
 
-  Future<void> _installFfmpegWindows(InstallProgress? onProgress) async {
-    final asset = platform.arch == HostArch.arm64
-        ? DependencySources.ffmpegWindowsArm64Asset
-        : DependencySources.ffmpegWindowsX64Asset;
+  /// Installs FFmpeg from yt-dlp/FFmpeg-Builds (Windows zip / Linux tar.xz).
+  Future<void> _installFfmpegBuild(InstallProgress? onProgress) async {
+    final arm = platform.arch == HostArch.arm64;
+    final asset = platform.isLinux
+        ? (arm ? DependencySources.ffmpegLinuxArm64Asset : DependencySources.ffmpegLinuxX64Asset)
+        : (arm ? DependencySources.ffmpegWindowsArm64Asset : DependencySources.ffmpegWindowsX64Asset);
+    final exe = platform.exeSuffix;
     final work = Directory(p.join(managedBinDir, '.ffmpeg-install'));
     if (await work.exists()) await work.delete(recursive: true);
     await work.create(recursive: true);
@@ -290,18 +442,23 @@ class DependencyManager {
       );
       onProgress?.call(null, 'Extracting');
       final extracted = Directory(p.join(work.path, 'x'));
-      await BinaryInstaller.extractZip(archive, extracted);
-      final files = await extracted.list(recursive: true).where((e) => e is File).cast<File>().toList();
-      File? find(String name) =>
-          files.where((f) => p.basename(f.path).toLowerCase() == name).firstOrNull;
-      final ffmpeg = find('ffmpeg.exe');
-      final ffprobe = find('ffprobe.exe');
-      if (ffmpeg == null || ffprobe == null) {
-        throw const AppError(AppErrorKind.unknown,
-            'The FFmpeg archive didn\'t contain ffmpeg.exe and ffprobe.exe.');
+      if (asset.endsWith('.tar.xz')) {
+        await BinaryInstaller.extractTarXz(archive, extracted);
+      } else {
+        await BinaryInstaller.extractZip(archive, extracted);
       }
-      await ffmpeg.copy(p.join(managedBinDir, 'ffmpeg.exe'));
-      await ffprobe.copy(p.join(managedBinDir, 'ffprobe.exe'));
+      final files = await extracted.list(recursive: true).where((e) => e is File).cast<File>().toList();
+      File? find(String name) => files.where((f) => p.basename(f.path).toLowerCase() == name).firstOrNull;
+      final ffmpeg = find('ffmpeg$exe');
+      final ffprobe = find('ffprobe$exe');
+      if (ffmpeg == null || ffprobe == null) {
+        throw const AppError(AppErrorKind.unknown, 'The FFmpeg archive didn\'t contain ffmpeg and ffprobe.');
+      }
+      for (final (src, name) in [(ffmpeg, 'ffmpeg$exe'), (ffprobe, 'ffprobe$exe')]) {
+        final dest = p.join(managedBinDir, name);
+        await src.copy(dest);
+        await _makeExecutable(dest);
+      }
       final license = find('license.txt');
       if (license != null) await license.copy(p.join(managedBinDir, 'FFMPEG-LICENSE.txt'));
     } finally {
@@ -313,13 +470,20 @@ class DependencyManager {
     if (platform.isWindows) return;
     final r = await Process.run('/bin/chmod', ['755', path], runInShell: false);
     if (r.exitCode != 0) {
-      throw AppError(AppErrorKind.permission, 'Couldn\'t mark the downloaded file as executable.',
-          detail: '${r.stderr}');
+      throw AppError(
+        AppErrorKind.permission,
+        'Couldn\'t mark the downloaded file as executable.',
+        detail: '${r.stderr}',
+      );
     }
   }
 
-  /// Updates yt-dlp when it is managed by finder (re-downloads latest).
-  /// Other installations must be updated by whatever installed them.
+  /// yt-dlp shipped with or updated by Finder can be updated in place (sites
+  /// change often, so a newer yt-dlp is sometimes needed between releases).
+  /// The update goes to the app data folder and takes precedence over the
+  /// bundled copy. Custom paths must be updated by whatever installed them.
   bool canUpdate(DependencyStatus status) =>
-      status.isReady && status.source == DependencySource.managed && canInstall(status.kind);
+      status.isReady &&
+      (status.source == DependencySource.managed || status.source == DependencySource.bundled) &&
+      canInstall(status.kind);
 }

@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../core/errors/app_error.dart';
 import '../core/errors/error_classifier.dart';
 import '../models/download_options.dart';
+import 'android/android_toolchain.dart';
 import 'process_service.dart';
 import 'trust_store_service.dart';
 import 'ytdlp/ytdlp_args.dart';
@@ -84,7 +85,8 @@ class YtDlpDownloaderService implements DownloaderService {
       options: spec.options,
       directory: spec.directory,
       outputTemplate: spec.outputTemplate,
-      ffmpegLocation: spec.ffmpegPath,
+      // The embedded Android toolchain sets FFmpeg's location itself.
+      ffmpegLocation: AndroidBundled.isBundled(spec.ffmpegPath) ? null : spec.ffmpegPath,
       network: spec.network.arguments,
     );
     final ManagedProcess proc;
@@ -172,14 +174,22 @@ class _YtDlpJob implements DownloadJob {
     if (code == 0) {
       final path = _finalPath;
       if (path == null) {
-        return DownloadFailed(AppError(AppErrorKind.unknown,
+        return DownloadFailed(
+          AppError(
+            AppErrorKind.unknown,
             'The download finished but no output file was reported.',
-            detail: 'exit 0 without filepath; stderr: ${_stderrTail.join(' | ')}'));
+            detail: 'exit 0 without filepath; stderr: ${_stderrTail.join(' | ')}',
+          ),
+        );
       }
       if (!await File(path).exists()) {
-        return DownloadFailed(AppError(AppErrorKind.unknown,
+        return DownloadFailed(
+          AppError(
+            AppErrorKind.unknown,
             'The download finished but the output file is missing.',
-            detail: 'missing ${p.basename(path)}'));
+            detail: 'missing ${p.basename(path)}',
+          ),
+        );
       }
       return DownloadSucceeded(filePath: path, resolution: _meta?.res, extension: _meta?.ext);
     }

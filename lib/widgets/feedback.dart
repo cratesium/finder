@@ -26,10 +26,7 @@ Future<bool> confirmDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Text(message),
-      ),
+      content: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: Text(message)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
         FilledButton(

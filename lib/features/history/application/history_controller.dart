@@ -8,12 +8,7 @@ import '../../../models/history_record.dart';
 import '../../downloads/application/download_providers.dart';
 
 class HistoryFilter {
-  const HistoryFilter({
-    this.search = '',
-    this.status,
-    this.date = HistoryDateFilter.all,
-    this.customRange,
-  });
+  const HistoryFilter({this.search = '', this.status, this.date = HistoryDateFilter.all, this.customRange});
 
   final String search;
   final HistoryStatus? status;
@@ -28,11 +23,9 @@ class HistoryFilter {
       HistoryDateFilter.week => (today.subtract(const Duration(days: 6)), null),
       HistoryDateFilter.month => (today.subtract(const Duration(days: 29)), null),
       HistoryDateFilter.custom => (
-          customRange?.start,
-          customRange == null
-              ? null
-              : DateTime(customRange!.end.year, customRange!.end.month, customRange!.end.day + 1),
-        ),
+        customRange?.start,
+        customRange == null ? null : DateTime(customRange!.end.year, customRange!.end.month, customRange!.end.day + 1),
+      ),
     };
     return HistoryQuery(search: search, status: status, from: from, to: to);
   }
@@ -42,13 +35,12 @@ class HistoryFilter {
     HistoryStatus? Function()? status,
     HistoryDateFilter? date,
     DateTimeRange? Function()? customRange,
-  }) =>
-      HistoryFilter(
-        search: search ?? this.search,
-        status: status != null ? status() : this.status,
-        date: date ?? this.date,
-        customRange: customRange != null ? customRange() : this.customRange,
-      );
+  }) => HistoryFilter(
+    search: search ?? this.search,
+    status: status != null ? status() : this.status,
+    date: date ?? this.date,
+    customRange: customRange != null ? customRange() : this.customRange,
+  );
 }
 
 class HistoryFilterController extends Notifier<HistoryFilter> {
@@ -57,8 +49,7 @@ class HistoryFilterController extends Notifier<HistoryFilter> {
   void set(HistoryFilter f) => state = f;
 }
 
-final historyFilterProvider =
-    NotifierProvider<HistoryFilterController, HistoryFilter>(HistoryFilterController.new);
+final historyFilterProvider = NotifierProvider<HistoryFilterController, HistoryFilter>(HistoryFilterController.new);
 
 /// Manual refresh counter (removals, clears).
 class HistoryRevision extends Notifier<int> {
@@ -71,11 +62,13 @@ final historyRevisionProvider = NotifierProvider<HistoryRevision, int>(HistoryRe
 
 /// Checks whether completed downloads still exist on disk.
 Future<List<HistoryRecord>> markMissingFiles(List<HistoryRecord> records) async {
-  return Future.wait(records.map((r) async {
-    if (r.status != HistoryStatus.completed || r.filePath == null) return r;
-    final exists = await File(r.filePath!).exists();
-    return exists ? r : r.copyWith(fileMissing: true);
-  }));
+  return Future.wait(
+    records.map((r) async {
+      if (r.status != HistoryStatus.completed || r.filePath == null) return r;
+      final exists = await File(r.filePath!).exists();
+      return exists ? r : r.copyWith(fileMissing: true);
+    }),
+  );
 }
 
 final historyProvider = FutureProvider<List<HistoryRecord>>((ref) async {

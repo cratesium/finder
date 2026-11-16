@@ -49,8 +49,9 @@ void main() {
     });
 
     test('MP3 conversion sets format and quality', () {
-      final a = YtDlpArgs.formatSelection(base.copyWith(
-          mode: DownloadMode.audioOnly, audioFormat: AudioFormat.mp3, audioQuality: AudioQuality.k192));
+      final a = YtDlpArgs.formatSelection(
+        base.copyWith(mode: DownloadMode.audioOnly, audioFormat: AudioFormat.mp3, audioQuality: AudioQuality.k192),
+      );
       expect(valueAfter(a, '--audio-format'), 'mp3');
       expect(valueAfter(a, '--audio-quality'), '192K');
     });
@@ -94,8 +95,7 @@ void main() {
 
   group('output template', () {
     test('numbered playlist items are zero padded', () {
-      expect(YtDlpArgs.outputTemplate(playlistIndex: 7, numbered: true),
-          '007 - %(title).180B [%(id)s].%(ext)s');
+      expect(YtDlpArgs.outputTemplate(playlistIndex: 7, numbered: true), '007 - %(title).180B [%(id)s].%(ext)s');
     });
 
     test('unnumbered omits the prefix', () {

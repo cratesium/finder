@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 
@@ -14,18 +17,28 @@ import 'core/logging/app_logger.dart';
 import 'core/theme/app_theme.dart';
 import 'features/history/data/history_repository.dart';
 import 'features/settings/data/settings_repository.dart';
+import 'services/android/android_toolchain.dart';
 import 'services/storage_service.dart';
 
 final _log = Logger('main');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(['Inter'], await rootBundle.loadString('assets/fonts/Inter-OFL.txt'));
+  });
 
   AppPaths paths;
   try {
-    paths = await AppPaths.resolve();
+    String? androidDownloads;
+    if (Platform.isAndroid) {
+      final toolchain = AndroidToolchain();
+      await toolchain.ensureStoragePermission();
+      androidDownloads = await toolchain.downloadsDirectory();
+    }
+    paths = await AppPaths.resolve(downloadFolder: androidDownloads);
   } catch (e) {
-    runApp(StartupErrorApp(message: 'finder couldn\'t access its application data folder.\n\n$e'));
+    runApp(StartupErrorApp(message: 'Finder couldn\'t access its application data folder.\n\n$e'));
     return;
   }
 
@@ -46,17 +59,19 @@ Future<void> main() async {
     final interrupted = await SqliteHistoryRepository(db).markInterrupted();
     if (interrupted > 0) _log.info('$interrupted download(s) were interrupted last session');
 
-    runApp(ProviderScope(
-      // Errors are surfaced to the user explicitly; don't silently retry.
-      retry: (_, _) => null,
-      overrides: [
-        appPathsProvider.overrideWithValue(paths),
-        databaseProvider.overrideWithValue(db),
-        initialSettingsProvider.overrideWithValue(settings),
-        interruptedAtStartupProvider.overrideWithValue(interrupted),
-      ],
-      child: const FinderApp(),
-    ));
+    runApp(
+      ProviderScope(
+        // Errors are surfaced to the user explicitly; don't silently retry.
+        retry: (_, _) => null,
+        overrides: [
+          appPathsProvider.overrideWithValue(paths),
+          databaseProvider.overrideWithValue(db),
+          initialSettingsProvider.overrideWithValue(settings),
+          interruptedAtStartupProvider.overrideWithValue(interrupted),
+        ],
+        child: const FinderApp(),
+      ),
+    );
   } on AppError catch (e) {
     _log.severe('startup failed', e);
     runApp(StartupErrorApp(message: '${e.message}\n\nDiagnostic logs: ${AppLogger.instance.logDirectory}'));
@@ -83,7 +98,7 @@ class StartupErrorApp extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('finder couldn\'t start', style: Theme.of(context).textTheme.headlineSmall),
+                  Text('Finder couldn\'t start', style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 12),
                   SelectableText(message),
                 ],

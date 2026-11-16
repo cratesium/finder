@@ -7,13 +7,13 @@ import 'package:finder/services/ytdlp/metadata_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, Object?> fmt(String id, {int? w, int? h, String v = 'avc1', String a = 'none', String ext = 'mp4'}) => {
-      'format_id': id,
-      'ext': ext,
-      'width': w,
-      'height': h,
-      'vcodec': v,
-      'acodec': a,
-    };
+  'format_id': id,
+  'ext': ext,
+  'width': w,
+  'height': h,
+  'vcodec': v,
+  'acodec': a,
+};
 
 void main() {
   group('MetadataParser – playlists', () {
@@ -103,7 +103,13 @@ void main() {
         'id': 'ch',
         'title': 'Channel',
         'entries': [
-          {'_type': 'url', 'ie_key': 'YoutubeTab', 'id': 'UU1', 'url': 'https://youtube.com/playlist?list=UU1', 'title': 'Videos'},
+          {
+            '_type': 'url',
+            'ie_key': 'YoutubeTab',
+            'id': 'UU1',
+            'url': 'https://youtube.com/playlist?list=UU1',
+            'title': 'Videos',
+          },
         ],
       }, sourceUrl: 'x');
       expect(info.entries.single.availability, EntryAvailability.nestedPlaylist);
@@ -136,12 +142,7 @@ void main() {
       expect(e.formats.map((f) => f.formatId), ['140', '134', '136', '137']);
       expect(e.maxResolution, 1080);
       expect(e.hasAudioStreams, isTrue);
-      expect(e.availableQualities, {
-        VideoQuality.best,
-        VideoQuality.p1080,
-        VideoQuality.p720,
-        VideoQuality.p360,
-      });
+      expect(e.availableQualities, {VideoQuality.best, VideoQuality.p1080, VideoQuality.p720, VideoQuality.p360});
     });
 
     test('vertical videos are bucketed by their short side', () {
@@ -167,7 +168,12 @@ void main() {
     });
 
     test('live streams are flagged', () {
-      final info = MetadataParser.parse({'id': 'l', 'title': 'Live', 'is_live': true, 'webpage_url': 'https://x.com/l'}, sourceUrl: 'x');
+      final info = MetadataParser.parse({
+        'id': 'l',
+        'title': 'Live',
+        'is_live': true,
+        'webpage_url': 'https://x.com/l',
+      }, sourceUrl: 'x');
       expect(info.entries.single.availability, EntryAvailability.live);
     });
 

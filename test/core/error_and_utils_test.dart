@@ -107,7 +107,10 @@ void main() {
       final back = AppSettings.fromJson(s.toJson(), fallbackDirectory: '/f');
       expect(back.toJson(), s.toJson());
 
-      final bad = AppSettings.fromJson({'maxConcurrentDownloads': 99, 'defaultQuality': 'p9999'}, fallbackDirectory: '/f');
+      final bad = AppSettings.fromJson({
+        'maxConcurrentDownloads': 99,
+        'defaultQuality': 'p9999',
+      }, fallbackDirectory: '/f');
       expect(bad.downloadDirectory, '/f');
       expect(bad.maxConcurrentDownloads, 6);
       expect(bad.defaultQuality, VideoQuality.best);
@@ -116,8 +119,7 @@ void main() {
 
   group('BinaryInstaller.parseChecksums', () {
     test('parses sha256sum formats', () {
-      final sums = BinaryInstaller.parseChecksums(
-          '${'a' * 64}  yt-dlp_macos\n${'B' * 64} *yt-dlp.exe\ngarbage line\n');
+      final sums = BinaryInstaller.parseChecksums('${'a' * 64}  yt-dlp_macos\n${'B' * 64} *yt-dlp.exe\ngarbage line\n');
       expect(sums['yt-dlp_macos'], 'a' * 64);
       expect(sums['yt-dlp.exe'], 'b' * 64);
       expect(sums.length, 2);

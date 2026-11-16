@@ -51,3 +51,9 @@ app.*.map.json
 /third_party/*/bin/
 # Rendered UI screenshots
 /build/screenshots/
+
+# Local-only extra CA certificates for Docker builds behind HTTPS inspection
+/packaging/linux/extra-ca*.crt
+# Downloaded, verified build dependencies (fetched by tool/fetch_dependencies.dart)
+/third_party/linux/
+/third_party/macos/

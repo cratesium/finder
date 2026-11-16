@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "finder" "\0"
-            VALUE "FileDescription", "finder" "\0"
+            VALUE "CompanyName", "Cratesium" "\0"
+            VALUE "FileDescription", "Finder" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "finder" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 finder. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Cratesium. All rights reserved." "\0"
             VALUE "OriginalFilename", "finder.exe" "\0"
-            VALUE "ProductName", "finder" "\0"
+            VALUE "ProductName", "Finder" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

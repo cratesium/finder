@@ -48,8 +48,7 @@ class BinaryInstaller {
       final req = await client.getUrl(url);
       final res = await req.close().timeout(idleTimeout);
       if (res.statusCode != 200) {
-        throw AppError(AppErrorKind.network,
-            'Couldn\'t download the checksum list (HTTP ${res.statusCode}).');
+        throw AppError(AppErrorKind.network, 'Couldn\'t download the checksum list (HTTP ${res.statusCode}).');
       }
       return await res.timeout(idleTimeout).transform(utf8.decoder).join();
     } on SocketException catch (e) {
@@ -98,8 +97,10 @@ class BinaryInstaller {
       if (actual != expectedSha256.toLowerCase()) {
         await tmp.delete();
         _log.severe('checksum mismatch for ${url.path}: expected $expectedSha256 got $actual');
-        throw const AppError(AppErrorKind.unknown,
-            'The downloaded file failed checksum verification and was discarded.');
+        throw const AppError(
+          AppErrorKind.unknown,
+          'The downloaded file failed checksum verification and was discarded.',
+        );
       }
       onProgress?.call(1, 'Verified');
       if (await target.exists()) await target.delete();
@@ -135,8 +136,10 @@ class BinaryInstaller {
     final sums = parseChecksums(await _withRetries(() => fetchText(checksumsUrl), onProgress));
     final expected = sums[assetName];
     if (expected == null) {
-      throw AppError(AppErrorKind.unknown,
-          'The official release doesn\'t list a checksum for $assetName, so it wasn\'t installed.');
+      throw AppError(
+        AppErrorKind.unknown,
+        'The official release doesn\'t list a checksum for $assetName, so it wasn\'t installed.',
+      );
     }
     return _withRetries(
       () => downloadVerified(
@@ -150,7 +153,7 @@ class BinaryInstaller {
   }
 
   Future<T> _withRetries<T>(Future<T> Function() op, InstallProgress? onProgress) async {
-    for (var attempt = 1;; attempt++) {
+    for (var attempt = 1; ; attempt++) {
       try {
         return await op();
       } on AppError catch (e) {
@@ -163,17 +166,54 @@ class BinaryInstaller {
   }
 
   /// Extracts a zip archive using the OS-provided `tar` (bsdtar), which ships
-  /// with Windows 10+ and macOS. Arguments are passed without a shell.
+  /// with Windows 10+ and macOS. Linux's GNU tar can't read zip files, so
+  /// `bsdtar` or `unzip` is used there. Arguments are passed without a shell.
   static Future<void> extractZip(File archive, Directory into) async {
     await into.create(recursive: true);
-    final tar = Platform.isWindows
-        ? p.join(Platform.environment['SystemRoot'] ?? r'C:\Windows', 'System32', 'tar.exe')
-        : '/usr/bin/tar';
-    final r = await Process.run(tar, ['-xf', archive.path, '-C', into.path], runInShell: false);
-    if (r.exitCode != 0) {
-      throw AppError(AppErrorKind.unknown, 'Couldn\'t extract the downloaded archive.',
-          detail: '${r.stderr}');
+    final String exe;
+    final List<String> args;
+    if (Platform.isWindows) {
+      exe = p.join(Platform.environment['SystemRoot'] ?? r'C:\Windows', 'System32', 'tar.exe');
+      args = ['-xf', archive.path, '-C', into.path];
+    } else if (Platform.isLinux) {
+      final bsdtar = _firstExisting(['/usr/bin/bsdtar', '/bin/bsdtar']);
+      final unzip = _firstExisting(['/usr/bin/unzip', '/bin/unzip']);
+      if (bsdtar != null) {
+        exe = bsdtar;
+        args = ['-xf', archive.path, '-C', into.path];
+      } else if (unzip != null) {
+        exe = unzip;
+        args = ['-q', '-o', archive.path, '-d', into.path];
+      } else {
+        throw const AppError(
+          AppErrorKind.unknown,
+          'Extracting the update needs `unzip` or `bsdtar`, which aren\'t installed on this system.',
+        );
+      }
+    } else {
+      exe = '/usr/bin/tar';
+      args = ['-xf', archive.path, '-C', into.path];
     }
+    final r = await Process.run(exe, args, runInShell: false);
+    if (r.exitCode != 0) {
+      throw AppError(AppErrorKind.unknown, 'Couldn\'t extract the downloaded archive.', detail: '${r.stderr}');
+    }
+  }
+
+  /// Extracts a `.tar.xz` archive with the system `tar` (build tooling only).
+  static Future<void> extractTarXz(File archive, Directory into) async {
+    await into.create(recursive: true);
+    final r = await Process.run('tar', ['-xJf', archive.path, '-C', into.path], runInShell: false);
+    if (r.exitCode != 0) {
+      throw AppError(AppErrorKind.unknown, 'Couldn\'t extract the downloaded archive.', detail: '${r.stderr}');
+    }
+  }
+
+  static String? _firstExisting(List<String> paths) {
+    for (final path in paths) {
+      if (File(path).existsSync()) return path;
+    }
+    return null;
   }
 }
 

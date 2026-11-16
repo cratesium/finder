@@ -11,33 +11,37 @@ abstract final class YtDlpArgs {
 
   /// Options common to every invocation. `--ignore-config` ensures a user's
   /// global yt-dlp config can't change behaviour or inject options.
-  static const List<String> base = [
-    '--ignore-config',
-    '--no-color',
-    '--no-cache-dir',
-  ];
+  static const List<String> base = ['--ignore-config', '--no-color', '--no-cache-dir'];
 
-  static List<String> metadata(String url, {List<String> network = const []}) => [
-        ...base,
-        ...network,
-        '--dump-single-json',
-        '--flat-playlist',
-        '--no-warnings',
-        '--',
-        url,
-      ];
+  static List<String> metadata(String url, {List<String> network = const [], FetchScope scope = FetchScope.auto}) => [
+    ...base,
+    ...network,
+    '--dump-single-json',
+    '--flat-playlist',
+    // A link such as `watch?v=…&list=…` points at both a video and a
+    // playlist; the user's choice decides which one is read.
+    if (scope == FetchScope.single) '--no-playlist',
+    if (scope == FetchScope.playlist) '--yes-playlist',
+    '--no-warnings',
+    '--',
+    url,
+  ];
 
   /// `-f`/`-S` selection for the requested options.
   static List<String> formatSelection(DownloadOptions o) {
     if (o.isAudioOnly) {
       return [
-        '-f', 'ba/b',
+        '-f',
+        'ba/b',
         '-x',
         if (o.audioFormat == AudioFormat.mp3) ...[
-          '--audio-format', 'mp3',
-          '--audio-quality', o.audioQuality.ytDlpValue,
+          '--audio-format',
+          'mp3',
+          '--audio-quality',
+          o.audioQuality.ytDlpValue,
         ] else ...[
-          '--audio-format', 'best',
+          '--audio-format',
+          'best',
         ],
       ];
     }
@@ -48,7 +52,8 @@ abstract final class YtDlpArgs {
       if (o.container == ContainerFormat.mp4) 'ext:mp4:m4a',
     ];
     return [
-      '-f', 'bv*+ba/b',
+      '-f',
+      'bv*+ba/b',
       if (sort.isNotEmpty) ...['-S', sort.join(',')],
       if (o.container.extension != null) ...[
         // Merge/remux without re-encoding.
@@ -60,9 +65,7 @@ abstract final class YtDlpArgs {
 
   /// Output template relative to `-P home:`; literal parts are escaped.
   static String outputTemplate({int? playlistIndex, bool numbered = false}) {
-    final prefix = (numbered && playlistIndex != null)
-        ? '${playlistIndex.toString().padLeft(3, '0')} - '
-        : '';
+    final prefix = (numbered && playlistIndex != null) ? '${playlistIndex.toString().padLeft(3, '0')} - ' : '';
     return '${PathUtils.escapeTemplate(prefix)}%(title).180B [%(id)s].%(ext)s';
   }
 
@@ -73,34 +76,39 @@ abstract final class YtDlpArgs {
     required String outputTemplate,
     String? ffmpegLocation,
     List<String> network = const [],
-  }) =>
-      [
-        ...base,
-        ...network,
-        '--newline',
-        '--no-playlist',
-        '--no-mtime',
-        '--continue',
-        '--no-overwrites',
-        '--windows-filenames',
-        '--quiet',
-        '--progress',
-        '--progress-delta', '0.5',
-        '--progress-template',
-        'download:$marker'
-            'dl|%(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|'
-            '%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|'
-            '%(progress.fragment_index)s|%(progress.fragment_count)s|%(info.format_id)s',
-        '--progress-template',
-        'postprocess:${marker}pp|%(progress.status)s|%(progress.postprocessor)s',
-        '--print', 'before_dl:${marker}dest|%(filename)s',
-        '--print', 'after_move:${marker}meta|%(height)s|%(width)s|%(ext)s',
-        '--print', 'after_move:${marker}file|%(filepath)s',
-        if (ffmpegLocation != null) ...['--ffmpeg-location', ffmpegLocation],
-        '-P', 'home:$directory',
-        '-o', outputTemplate,
-        ...formatSelection(options),
-        '--',
-        url,
-      ];
+  }) => [
+    ...base,
+    ...network,
+    '--newline',
+    '--no-playlist',
+    '--no-mtime',
+    '--continue',
+    '--no-overwrites',
+    '--windows-filenames',
+    '--quiet',
+    '--progress',
+    '--progress-delta',
+    '0.5',
+    '--progress-template',
+    'download:$marker'
+        'dl|%(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|'
+        '%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|'
+        '%(progress.fragment_index)s|%(progress.fragment_count)s|%(info.format_id)s',
+    '--progress-template',
+    'postprocess:${marker}pp|%(progress.status)s|%(progress.postprocessor)s',
+    '--print',
+    'before_dl:${marker}dest|%(filename)s',
+    '--print',
+    'after_move:${marker}meta|%(height)s|%(width)s|%(ext)s',
+    '--print',
+    'after_move:${marker}file|%(filepath)s',
+    if (ffmpegLocation != null) ...['--ffmpeg-location', ffmpegLocation],
+    '-P',
+    'home:$directory',
+    '-o',
+    outputTemplate,
+    ...formatSelection(options),
+    '--',
+    url,
+  ];
 }

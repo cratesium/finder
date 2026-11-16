@@ -10,8 +10,8 @@ enum HistoryStatus {
   const HistoryStatus(this.label);
   final String label;
 
-  static HistoryStatus fromName(String? name) => values
-      .firstWhere((v) => v.name == name, orElse: () => HistoryStatus.failed);
+  static HistoryStatus fromName(String? name) =>
+      values.firstWhere((v) => v.name == name, orElse: () => HistoryStatus.failed);
 }
 
 /// A persisted download record.
@@ -75,29 +75,28 @@ class HistoryRecord {
     String? errorMessage,
     bool clearError = false,
     bool? fileMissing,
-  }) =>
-      HistoryRecord(
-        id: id ?? this.id,
-        dedupeKey: dedupeKey,
-        videoId: videoId,
-        extractor: extractor,
-        title: title,
-        url: url,
-        playlistTitle: playlistTitle,
-        playlistIndex: playlistIndex,
-        thumbnailUrl: thumbnailUrl,
-        createdAt: createdAt,
-        destinationDir: destinationDir,
-        options: options,
-        status: status ?? this.status,
-        completedAt: completedAt ?? this.completedAt,
-        resolution: resolution ?? this.resolution,
-        format: format ?? this.format,
-        fileSize: fileSize ?? this.fileSize,
-        filePath: filePath ?? this.filePath,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-        fileMissing: fileMissing ?? this.fileMissing,
-      );
+  }) => HistoryRecord(
+    id: id ?? this.id,
+    dedupeKey: dedupeKey,
+    videoId: videoId,
+    extractor: extractor,
+    title: title,
+    url: url,
+    playlistTitle: playlistTitle,
+    playlistIndex: playlistIndex,
+    thumbnailUrl: thumbnailUrl,
+    createdAt: createdAt,
+    destinationDir: destinationDir,
+    options: options,
+    status: status ?? this.status,
+    completedAt: completedAt ?? this.completedAt,
+    resolution: resolution ?? this.resolution,
+    format: format ?? this.format,
+    fileSize: fileSize ?? this.fileSize,
+    filePath: filePath ?? this.filePath,
+    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    fileMissing: fileMissing ?? this.fileMissing,
+  );
 }
 
 enum HistoryDateFilter {
@@ -113,12 +112,7 @@ enum HistoryDateFilter {
 
 /// Query parameters for the history list.
 class HistoryQuery {
-  const HistoryQuery({
-    this.search = '',
-    this.status,
-    this.from,
-    this.to,
-  });
+  const HistoryQuery({this.search = '', this.status, this.from, this.to});
 
   final String search;
   final HistoryStatus? status;

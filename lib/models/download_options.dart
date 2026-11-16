@@ -40,6 +40,19 @@ enum ContainerFormat {
       values.firstWhere((v) => v.name == name, orElse: () => ContainerFormat.mp4);
 }
 
+/// What to read from a link that may identify both a video and a playlist
+/// (e.g. `watch?v=…&list=…`).
+enum FetchScope {
+  /// Let the source decide (playlist links become playlists).
+  auto,
+
+  /// Only the single video.
+  single,
+
+  /// The whole playlist.
+  playlist,
+}
+
 enum DownloadMode {
   video('Video + audio'),
   audioOnly('Audio only');
@@ -106,15 +119,11 @@ class DownloadOptions {
 
   /// The output "kind" used for duplicate detection: the same video into the
   /// same folder with the same output type is considered a duplicate.
-  String get outputKind => isAudioOnly
-      ? 'audio-${audioFormat.name}'
-      : 'video-${container.name}';
+  String get outputKind => isAudioOnly ? 'audio-${audioFormat.name}' : 'video-${container.name}';
 
   String get summary {
     if (isAudioOnly) {
-      return audioFormat == AudioFormat.mp3
-          ? 'Audio · MP3 ${audioQuality.label}'
-          : 'Audio · best original';
+      return audioFormat == AudioFormat.mp3 ? 'Audio · MP3 ${audioQuality.label}' : 'Audio · best original';
     }
     return '${quality.label} · ${container.label}';
   }
@@ -127,36 +136,35 @@ class DownloadOptions {
     AudioFormat? audioFormat,
     AudioQuality? audioQuality,
     bool? numberPlaylistItems,
-  }) =>
-      DownloadOptions(
-        destinationDir: destinationDir ?? this.destinationDir,
-        mode: mode ?? this.mode,
-        quality: quality ?? this.quality,
-        container: container ?? this.container,
-        audioFormat: audioFormat ?? this.audioFormat,
-        audioQuality: audioQuality ?? this.audioQuality,
-        numberPlaylistItems: numberPlaylistItems ?? this.numberPlaylistItems,
-      );
+  }) => DownloadOptions(
+    destinationDir: destinationDir ?? this.destinationDir,
+    mode: mode ?? this.mode,
+    quality: quality ?? this.quality,
+    container: container ?? this.container,
+    audioFormat: audioFormat ?? this.audioFormat,
+    audioQuality: audioQuality ?? this.audioQuality,
+    numberPlaylistItems: numberPlaylistItems ?? this.numberPlaylistItems,
+  );
 
   Map<String, Object?> toJson() => {
-        'destinationDir': destinationDir,
-        'mode': mode.name,
-        'quality': quality.name,
-        'container': container.name,
-        'audioFormat': audioFormat.name,
-        'audioQuality': audioQuality.name,
-        'numberPlaylistItems': numberPlaylistItems,
-      };
+    'destinationDir': destinationDir,
+    'mode': mode.name,
+    'quality': quality.name,
+    'container': container.name,
+    'audioFormat': audioFormat.name,
+    'audioQuality': audioQuality.name,
+    'numberPlaylistItems': numberPlaylistItems,
+  };
 
   factory DownloadOptions.fromJson(Map<String, Object?> json) => DownloadOptions(
-        destinationDir: json['destinationDir'] as String? ?? '',
-        mode: DownloadMode.fromName(json['mode'] as String?),
-        quality: VideoQuality.fromName(json['quality'] as String?),
-        container: ContainerFormat.fromName(json['container'] as String?),
-        audioFormat: AudioFormat.fromName(json['audioFormat'] as String?),
-        audioQuality: AudioQuality.fromName(json['audioQuality'] as String?),
-        numberPlaylistItems: json['numberPlaylistItems'] as bool? ?? true,
-      );
+    destinationDir: json['destinationDir'] as String? ?? '',
+    mode: DownloadMode.fromName(json['mode'] as String?),
+    quality: VideoQuality.fromName(json['quality'] as String?),
+    container: ContainerFormat.fromName(json['container'] as String?),
+    audioFormat: AudioFormat.fromName(json['audioFormat'] as String?),
+    audioQuality: AudioQuality.fromName(json['audioQuality'] as String?),
+    numberPlaylistItems: json['numberPlaylistItems'] as bool? ?? true,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -170,6 +178,6 @@ class DownloadOptions {
       other.numberPlaylistItems == numberPlaylistItems;
 
   @override
-  int get hashCode => Object.hash(destinationDir, mode, quality, container,
-      audioFormat, audioQuality, numberPlaylistItems);
+  int get hashCode =>
+      Object.hash(destinationDir, mode, quality, container, audioFormat, audioQuality, numberPlaylistItems);
 }

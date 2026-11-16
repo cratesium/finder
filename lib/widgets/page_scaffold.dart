@@ -23,33 +23,40 @@ class PageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Phones get tighter gutters and actions below the title.
+    final narrow = MediaQuery.sizeOf(context).width < 600;
+    final gutter = narrow ? Gap.lg : Gap.xxl;
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: context.text.headlineSmall),
+        if (subtitle != null) ...[
+          const SizedBox(height: Gap.xs),
+          Text(subtitle!, style: context.text.bodyMedium?.copyWith(color: context.palette.textSecondary)),
+        ],
+      ],
+    );
+    final actionsWrap = Wrap(spacing: Gap.sm, runSpacing: Gap.sm, children: actions);
     final header = Padding(
-      padding: const EdgeInsets.fromLTRB(Gap.xxl, Gap.xl, Gap.xxl, Gap.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.fromLTRB(gutter, narrow ? Gap.lg : Gap.xl, gutter, Gap.lg),
+      child: narrow
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(title, style: context.text.headlineSmall),
-                if (subtitle != null) ...[
-                  const SizedBox(height: Gap.xs),
-                  Text(subtitle!, style: context.text.bodyMedium?.copyWith(color: context.palette.textSecondary)),
-                ],
+                titleBlock,
+                if (actions.isNotEmpty) ...[const SizedBox(height: Gap.md), actionsWrap],
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: titleBlock),
+                if (actions.isNotEmpty) actionsWrap,
               ],
             ),
-          ),
-          if (actions.isNotEmpty)
-            Wrap(spacing: Gap.sm, runSpacing: Gap.sm, children: actions),
-        ],
-      ),
     );
 
-    final content = Padding(
-      padding: const EdgeInsets.fromLTRB(Gap.xxl, 0, Gap.xxl, Gap.xxl),
-      child: body,
-    );
+    final content = Padding(padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter), child: body);
 
     return Align(
       alignment: Alignment.topCenter,
@@ -64,7 +71,10 @@ class PageScaffold extends StatelessWidget {
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [header, Expanded(child: content)],
+                children: [
+                  header,
+                  Expanded(child: content),
+                ],
               ),
       ),
     );

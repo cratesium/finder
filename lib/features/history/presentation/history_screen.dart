@@ -27,8 +27,7 @@ class HistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
-  late final TextEditingController _search =
-      TextEditingController(text: ref.read(historyFilterProvider).search);
+  late final TextEditingController _search = TextEditingController(text: ref.read(historyFilterProvider).search);
   Timer? _debounce;
 
   @override
@@ -62,17 +61,19 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     return PageScaffold(
       title: 'History',
-      subtitle: 'Every download is recorded locally on this computer.',
+      subtitle: 'Every download is recorded locally on this device.',
       actions: [
         OutlinedButton.icon(
           onPressed: (history.value?.isEmpty ?? true)
               ? null
               : () async {
-                  final ok = await confirmDialog(context,
-                      title: 'Clear download history?',
-                      message: 'All history records will be removed. Downloaded files are not deleted.',
-                      confirmLabel: 'Clear history',
-                      destructive: true);
+                  final ok = await confirmDialog(
+                    context,
+                    title: 'Clear download history?',
+                    message: 'All history records will be removed. Downloaded files are not deleted.',
+                    confirmLabel: 'Clear history',
+                    destructive: true,
+                  );
                   if (!ok) return;
                   try {
                     await ref.read(historyRepositoryProvider).clear();
@@ -104,8 +105,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   ),
                   onChanged: (v) {
                     _debounce?.cancel();
-                    _debounce = Timer(const Duration(milliseconds: 250),
-                        () => _setFilter(ref.read(historyFilterProvider).copyWith(search: v)));
+                    _debounce = Timer(
+                      const Duration(milliseconds: 250),
+                      () => _setFilter(ref.read(historyFilterProvider).copyWith(search: v)),
+                    );
                   },
                 ),
               ),
@@ -164,32 +167,36 @@ class _HistoryTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.palette;
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gap.lg, vertical: Gap.md),
-            child: Row(
-              children: [
-                Expanded(flex: 6, child: Text('TITLE', style: context.text.labelSmall)),
-                const SizedBox(width: Gap.lg),
-                Expanded(flex: 2, child: Text('DATE', style: context.text.labelSmall)),
-                Expanded(flex: 2, child: Text('FORMAT', style: context.text.labelSmall)),
-                Expanded(flex: 2, child: Text('SIZE', style: context.text.labelSmall)),
-                SizedBox(width: 110, child: Text('STATUS', style: context.text.labelSmall)),
-                const SizedBox(width: 40),
+    return CardScope(
+      builder: (context) {
+        final c = context.palette;
+        return AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Gap.lg, vertical: Gap.md),
+                child: Row(
+                  children: [
+                    Expanded(flex: 6, child: Text('TITLE', style: context.text.labelSmall)),
+                    const SizedBox(width: Gap.lg),
+                    Expanded(flex: 2, child: Text('DATE', style: context.text.labelSmall)),
+                    Expanded(flex: 2, child: Text('FORMAT', style: context.text.labelSmall)),
+                    Expanded(flex: 2, child: Text('SIZE', style: context.text.labelSmall)),
+                    SizedBox(width: 110, child: Text('STATUS', style: context.text.labelSmall)),
+                    const SizedBox(width: 40),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: c.border),
+              for (var i = 0; i < records.length; i++) ...[
+                _HistoryRow(record: records[i]),
+                if (i != records.length - 1) Divider(height: 1, color: c.border.withValues(alpha: 0.6)),
               ],
-            ),
+            ],
           ),
-          Divider(height: 1, color: c.border),
-          for (var i = 0; i < records.length; i++) ...[
-            _HistoryRow(record: records[i]),
-            if (i != records.length - 1) Divider(height: 1, color: c.border.withValues(alpha: 0.6)),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -244,10 +251,12 @@ class _HistoryRow extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(r.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                      Text(
+                        r.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                      ),
                       const SizedBox(height: 2),
                       Text(
                         r.fileMissing
@@ -256,9 +265,8 @@ class _HistoryRow extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: context.text.bodySmall?.copyWith(
-                            color: r.fileMissing
-                                ? c.warning
-                                : (r.errorMessage != null ? c.danger : c.textSecondary)),
+                          color: r.fileMissing ? c.warning : (r.errorMessage != null ? c.danger : c.textSecondary),
+                        ),
                       ),
                     ],
                   ),
@@ -271,9 +279,10 @@ class _HistoryRow extends ConsumerWidget {
           Expanded(
             flex: 2,
             child: Text(
-              [if (r.resolution != null) r.resolution!, if (r.format != null) r.format!.toUpperCase()]
-                  .join(' · ')
-                  .ifEmpty('—'),
+              [
+                if (r.resolution != null) r.resolution!,
+                if (r.format != null) r.format!.toUpperCase(),
+              ].join(' · ').ifEmpty('—'),
               style: context.text.bodySmall,
             ),
           ),

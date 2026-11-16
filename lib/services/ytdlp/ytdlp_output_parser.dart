@@ -36,14 +36,14 @@ class PostProcessEvent extends YtDlpEvent {
   final String? postprocessor;
 
   String get label => switch (postprocessor) {
-        'Merger' => 'Merging audio and video',
-        'FFmpegMerger' => 'Merging audio and video',
-        'ExtractAudio' || 'FFmpegExtractAudio' => 'Extracting audio',
-        'VideoRemuxer' || 'FFmpegVideoRemuxer' => 'Remuxing container',
-        'MoveFiles' => 'Finalizing',
-        null => 'Processing',
-        final other => 'Processing ($other)',
-      };
+    'Merger' => 'Merging audio and video',
+    'FFmpegMerger' => 'Merging audio and video',
+    'ExtractAudio' || 'FFmpegExtractAudio' => 'Extracting audio',
+    'VideoRemuxer' || 'FFmpegVideoRemuxer' => 'Remuxing container',
+    'MoveFiles' => 'Finalizing',
+    null => 'Processing',
+    final other => 'Processing ($other)',
+  };
 }
 
 class DestinationEvent extends YtDlpEvent {
@@ -84,11 +84,7 @@ abstract final class YtDlpOutputParser {
     final idx = line.indexOf(YtDlpArgs.marker);
     if (idx < 0) {
       final t = line.trimLeft();
-      return LogLineEvent(
-        line,
-        isError: t.startsWith('ERROR:'),
-        isWarning: t.startsWith('WARNING:'),
-      );
+      return LogLineEvent(line, isError: t.startsWith('ERROR:'), isWarning: t.startsWith('WARNING:'));
     }
     final payload = line.substring(idx + YtDlpArgs.marker.length);
     final sep = payload.indexOf('|');
@@ -112,10 +108,7 @@ abstract final class YtDlpOutputParser {
         );
       case 'pp':
         final f = rest.split('|');
-        return PostProcessEvent(
-          status: f.first,
-          postprocessor: _str(f.length > 1 ? f[1] : null),
-        );
+        return PostProcessEvent(status: f.first, postprocessor: _str(f.length > 1 ? f[1] : null));
       case 'dest':
         // Path is the remainder; it may itself contain '|'.
         return DestinationEvent(rest);

@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('YtDlpOutputParser', () {
     test('parses a progress line with totals', () {
-      final e = YtDlpOutputParser.parse(
-          '[cg]dl|downloading|1048576|10485760|NA|524288.5|17|NA|NA|137') as ProgressEvent;
+      final e =
+          YtDlpOutputParser.parse('[cg]dl|downloading|1048576|10485760|NA|524288.5|17|NA|NA|137') as ProgressEvent;
       expect(e.status, 'downloading');
       expect(e.downloadedBytes, 1048576);
       expect(e.totalBytes, 10485760);
@@ -16,8 +16,7 @@ void main() {
     });
 
     test('parses fragment progress with estimated total', () {
-      final e = YtDlpOutputParser.parse(
-          '[cg]dl|downloading|2000|NA|50000.0|1000|NA|3|20|hls-720') as ProgressEvent;
+      final e = YtDlpOutputParser.parse('[cg]dl|downloading|2000|NA|50000.0|1000|NA|3|20|hls-720') as ProgressEvent;
       expect(e.totalBytes, isNull);
       expect(e.totalBytesEstimate, 50000);
       expect(e.fragmentIndex, 3);

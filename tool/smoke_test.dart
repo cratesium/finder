@@ -2,14 +2,14 @@
 //
 //   dart run tool/smoke_test.dart <work-dir> [url]
 //
-// 1. Installs yt-dlp via finder's DependencyManager (SHA-256 verified).
+// 1. Installs yt-dlp via Finder's DependencyManager (SHA-256 verified).
 // 2. Extracts metadata with YtDlpMetadataService.
-// 3. Downloads with YtDlpDownloaderService using finder's exact argument
+// 3. Downloads with YtDlpDownloaderService using Finder's exact argument
 //    builder and prints the parsed progress events.
 //
 // If FFmpeg is resolvable it is used; otherwise a single-file format is
 // requested so the test can run without FFmpeg. Set SMOKE_REAL_ARGS=1 to
-// always use finder's unmodified argument list.
+// always use Finder's unmodified argument list.
 import 'dart:io';
 
 import 'package:finder/core/utils/platform_info.dart';
@@ -104,7 +104,7 @@ Future<void> main(List<String> args) async {
   }
 }
 
-/// Uses finder's full argument list but swaps the format selection for a
+/// Uses Finder's full argument list but swaps the format selection for a
 /// single pre-merged file, so the run works without FFmpeg.
 class _SingleFileDownloader implements DownloaderService {
   _SingleFileDownloader(this._processes);

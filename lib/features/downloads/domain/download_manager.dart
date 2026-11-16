@@ -35,12 +35,7 @@ typedef FileSizeReader = Future<int?> Function(String path);
 typedef ResolutionProbe = Future<int?> Function(String ffmpegPath, String file);
 
 class EnqueueResult {
-  const EnqueueResult({
-    this.added = 0,
-    this.duplicates = 0,
-    this.skippedCompleted = 0,
-    this.unavailable = 0,
-  });
+  const EnqueueResult({this.added = 0, this.duplicates = 0, this.skippedCompleted = 0, this.unavailable = 0});
 
   final int added;
   final int duplicates;
@@ -84,10 +79,10 @@ class DownloadManager {
     this.notificationsEnabled = true,
     this.progressThrottle = const Duration(milliseconds: 150),
     DateTime Function()? clock,
-  })  : _directoryCheck = directoryCheck ?? PathUtils.ensureWritableDirectory,
-        _fileSize = fileSize ?? _defaultFileSize,
-        _maxConcurrent = maxConcurrent < 1 ? 1 : maxConcurrent,
-        _clock = clock ?? DateTime.now;
+  }) : _directoryCheck = directoryCheck ?? PathUtils.ensureWritableDirectory,
+       _fileSize = fileSize ?? _defaultFileSize,
+       _maxConcurrent = maxConcurrent < 1 ? 1 : maxConcurrent,
+       _clock = clock ?? DateTime.now;
 
   final DownloaderService _downloader;
   final HistoryRepository _history;
@@ -168,40 +163,30 @@ class DownloadManager {
       if (skipCompleted) {
         final existing = await _safeFind(key);
         final path = existing?.filePath;
-        if (existing?.status == HistoryStatus.completed &&
-            path != null &&
-            await File(path).exists()) {
-          _tasks.add(DownloadTask(
-            id: _newId(),
-            request: r,
-            status: TaskStatus.skipped,
-            createdAt: _clock(),
-            finishedAt: _clock(),
-            filePath: path,
-            fileSize: existing!.fileSize,
-            notice: 'Already downloaded — skipped.',
-          ));
+        if (existing?.status == HistoryStatus.completed && path != null && await File(path).exists()) {
+          _tasks.add(
+            DownloadTask(
+              id: _newId(),
+              request: r,
+              status: TaskStatus.skipped,
+              createdAt: _clock(),
+              finishedAt: _clock(),
+              filePath: path,
+              fileSize: existing!.fileSize,
+              notice: 'Already downloaded — skipped.',
+            ),
+          );
           skipped++;
           continue;
         }
       }
-      _tasks.add(DownloadTask(
-        id: _newId(),
-        request: r,
-        status: TaskStatus.queued,
-        createdAt: _clock(),
-      ));
+      _tasks.add(DownloadTask(id: _newId(), request: r, status: TaskStatus.queued, createdAt: _clock()));
       added++;
     }
     _log.info('enqueue: added=$added dup=$dup skipped=$skipped unavailable=$unavailable');
     _emitNow();
     _pump();
-    return EnqueueResult(
-      added: added,
-      duplicates: dup,
-      skippedCompleted: skipped,
-      unavailable: unavailable,
-    );
+    return EnqueueResult(added: added, duplicates: dup, skippedCompleted: skipped, unavailable: unavailable);
   }
 
   Future<HistoryRecord?> _safeFind(String key) async {
@@ -224,7 +209,9 @@ class DownloadManager {
     final run = _runs[id];
     if (run == null) return;
     run.stopReason = _StopReason.pause;
-    _update(id, (t) => t.copyWith(
+    _update(
+      id,
+      (t) => t.copyWith(
         status: TaskStatus.paused,
         progress: DownloadProgress(
           downloadedBytes: t.progress.downloadedBytes,
@@ -232,7 +219,9 @@ class DownloadManager {
           totalBytesIsEstimate: t.progress.totalBytesIsEstimate,
           streamIndex: t.progress.streamIndex,
           phaseLabel: 'Paused — partial data kept',
-        )));
+        ),
+      ),
+    );
     await run.job?.stop();
   }
 
@@ -249,10 +238,14 @@ class DownloadManager {
     final run = _runs[id];
     if (run != null) {
       run.stopReason = _StopReason.cancel;
-      _update(id, (t) => t.copyWith(
+      _update(
+        id,
+        (t) => t.copyWith(
           status: TaskStatus.cancelled,
           finishedAt: _clock(),
-          progress: const DownloadProgress(phaseLabel: 'Cancelling…')));
+          progress: const DownloadProgress(phaseLabel: 'Cancelling…'),
+        ),
+      );
       await run.job?.stop();
     } else {
       _update(id, (t) => t.copyWith(status: TaskStatus.cancelled, finishedAt: _clock()));
@@ -289,19 +282,16 @@ class DownloadManager {
   }
 
   void clearFinished() {
-    _tasks.removeWhere((t) =>
-        t.status == TaskStatus.completed ||
-        t.status == TaskStatus.skipped ||
-        t.status == TaskStatus.cancelled);
+    _tasks.removeWhere(
+      (t) => t.status == TaskStatus.completed || t.status == TaskStatus.skipped || t.status == TaskStatus.cancelled,
+    );
     _emitNow();
   }
 
   /// Moves a waiting task by [delta] positions among waiting tasks.
   void move(String id, int delta) {
     final waiting = _tasks
-        .where((t) =>
-            (t.status == TaskStatus.queued || t.status == TaskStatus.paused) &&
-            !_runs.containsKey(t.id))
+        .where((t) => (t.status == TaskStatus.queued || t.status == TaskStatus.paused) && !_runs.containsKey(t.id))
         .toList();
     final idx = waiting.indexWhere((t) => t.id == id);
     if (idx < 0) return;
@@ -356,7 +346,7 @@ class DownloadManager {
         startedAt: _clock(),
         clearError: true,
         clearNotice: true,
-        progress: const DownloadProgress(phaseLabel: 'Starting yt-dlp'),
+        progress: const DownloadProgress(phaseLabel: 'Starting…'),
       ),
     );
     try {
@@ -364,22 +354,26 @@ class DownloadManager {
       final tools = await _tools();
       final ytDlp = tools.ytDlpPath;
       if (ytDlp == null) {
-        throw const AppError(AppErrorKind.missingDependency,
-            'yt-dlp isn\'t installed. Open Settings → Dependencies to install it.');
+        throw const AppError(
+          AppErrorKind.missingDependency,
+          'The built-in download engine isn\'t available. Open Settings → Built-in engine for details.',
+        );
       }
       if (task.options.requiresFfmpeg && tools.ffmpegPath == null) {
         throw AppError(
           AppErrorKind.missingDependency,
           task.options.isAudioOnly
-              ? 'FFmpeg is required to extract audio. Set it up in Settings → Dependencies.'
-              : 'FFmpeg is required to merge video and audio. Set it up in Settings → Dependencies.',
+              ? 'FFmpeg is required to extract audio. Open Settings → Built-in engine for details.'
+              : 'FFmpeg is required to merge video and audio. Open Settings → Built-in engine for details.',
         );
       }
       final dir = task.request.effectiveDirectory;
       if (!await _directoryCheck(dir)) {
-        throw AppError(AppErrorKind.permission,
-            'finder can\'t write to the destination folder. Choose another folder or check its permissions.',
-            detail: PathUtils.displayPath(dir));
+        throw AppError(
+          AppErrorKind.permission,
+          'Finder can\'t write to the destination folder. Choose another folder or check its permissions.',
+          detail: PathUtils.displayPath(dir),
+        );
       }
       await _recordHistory(task, HistoryStatus.downloading);
       if (run.stopReason != null) return await _handleStopped(id, run);
@@ -460,15 +454,17 @@ class DownloadManager {
         statusChanged ? _emitNow() : _emitThrottled();
       case PostProcessEvent(:final status):
         if (status == 'started' || status == 'processing') {
-          _replace(t.copyWith(
-            status: TaskStatus.processing,
-            progress: DownloadProgress(
-              downloadedBytes: t.progress.downloadedBytes,
-              totalBytes: t.progress.totalBytes,
-              streamIndex: t.progress.streamIndex,
-              phaseLabel: e.label,
+          _replace(
+            t.copyWith(
+              status: TaskStatus.processing,
+              progress: DownloadProgress(
+                downloadedBytes: t.progress.downloadedBytes,
+                totalBytes: t.progress.totalBytes,
+                streamIndex: t.progress.streamIndex,
+                phaseLabel: e.label,
+              ),
             ),
-          ));
+          );
           _emitNow();
         }
       default:
@@ -550,13 +546,17 @@ class DownloadManager {
           _replace(t.copyWith(status: TaskStatus.paused));
         }
       case _StopReason.cancel:
-        _replace(t.copyWith(status: TaskStatus.cancelled, finishedAt: _clock(),
-            progress: const DownloadProgress(phaseLabel: 'Cancelled')));
+        _replace(
+          t.copyWith(
+            status: TaskStatus.cancelled,
+            finishedAt: _clock(),
+            progress: const DownloadProgress(phaseLabel: 'Cancelled'),
+          ),
+        );
         await _cleanupPartials(id);
         await _recordHistory(taskById(id)!, HistoryStatus.cancelled);
       case _StopReason.shutdown:
-        await _recordHistory(t, HistoryStatus.interrupted,
-            error: 'finder was closed before this download finished.');
+        await _recordHistory(t, HistoryStatus.interrupted, error: 'Finder was closed before this download finished.');
       case null:
         break;
     }
@@ -646,15 +646,16 @@ class DownloadManager {
     _queuePaused = true;
     final runs = Map.of(_runs);
     _log.info('shutdown: stopping ${runs.length} active download(s)');
-    await Future.wait(runs.entries.map((e) async {
-      e.value.stopReason = _StopReason.shutdown;
-      await e.value.job?.stop();
-    }));
+    await Future.wait(
+      runs.entries.map((e) async {
+        e.value.stopReason = _StopReason.shutdown;
+        await e.value.job?.stop();
+      }),
+    );
     for (final id in runs.keys) {
       final t = taskById(id);
       if (t != null) {
-        await _recordHistory(t, HistoryStatus.interrupted,
-            error: 'finder was closed before this download finished.');
+        await _recordHistory(t, HistoryStatus.interrupted, error: 'Finder was closed before this download finished.');
       }
     }
     _disposed = true;

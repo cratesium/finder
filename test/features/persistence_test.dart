@@ -7,25 +7,29 @@ import 'package:finder/services/storage_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-HistoryRecord record(String key,
-        {String title = 'Title', HistoryStatus status = HistoryStatus.completed, DateTime? at, String? playlist}) =>
-    HistoryRecord(
-      dedupeKey: key,
-      videoId: key,
-      extractor: 'Youtube',
-      title: title,
-      url: 'https://youtube.com/watch?v=$key',
-      destinationDir: '/d',
-      status: status,
-      createdAt: at ?? DateTime(2026, 1, 1),
-      completedAt: status == HistoryStatus.completed ? (at ?? DateTime(2026, 1, 1)) : null,
-      options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p720),
-      playlistTitle: playlist,
-      resolution: '720p',
-      format: 'mp4',
-      fileSize: 42,
-      filePath: '/d/$key.mp4',
-    );
+HistoryRecord record(
+  String key, {
+  String title = 'Title',
+  HistoryStatus status = HistoryStatus.completed,
+  DateTime? at,
+  String? playlist,
+}) => HistoryRecord(
+  dedupeKey: key,
+  videoId: key,
+  extractor: 'Youtube',
+  title: title,
+  url: 'https://youtube.com/watch?v=$key',
+  destinationDir: '/d',
+  status: status,
+  createdAt: at ?? DateTime(2026, 1, 1),
+  completedAt: status == HistoryStatus.completed ? (at ?? DateTime(2026, 1, 1)) : null,
+  options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p720),
+  playlistTitle: playlist,
+  resolution: '720p',
+  format: 'mp4',
+  fileSize: 42,
+  filePath: '/d/$key.mp4',
+);
 
 void main() {
   late Database db;
@@ -111,11 +115,9 @@ void main() {
       expect(initial.downloadDirectory, '/dl');
       expect(initial.theme, ThemePreference.dark);
 
-      await repo.save(initial.copyWith(
-        maxConcurrentDownloads: 4,
-        theme: ThemePreference.light,
-        ffmpegPath: () => '/opt/ffmpeg',
-      ));
+      await repo.save(
+        initial.copyWith(maxConcurrentDownloads: 4, theme: ThemePreference.light, ffmpegPath: () => '/opt/ffmpeg'),
+      );
       final loaded = await repo.load(fallbackDirectory: '/dl');
       expect(loaded.maxConcurrentDownloads, 4);
       expect(loaded.theme, ThemePreference.light);

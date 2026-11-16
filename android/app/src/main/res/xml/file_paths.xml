@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files Finder may hand to other apps ("Open"): the public storage it downloads to. -->
+<paths>
+    <external-path name="external" path="." />
+</paths>

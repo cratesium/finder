@@ -57,8 +57,7 @@ abstract final class UrlValidator {
       return const InvalidUrl('Only http:// and https:// links are supported.');
     }
     if (uri.userInfo.isNotEmpty) {
-      return const InvalidUrl(
-          'Links with embedded usernames or passwords aren\'t supported.');
+      return const InvalidUrl('Links with embedded usernames or passwords aren\'t supported.');
     }
     final host = uri.host.toLowerCase();
     if (host.isEmpty) return const InvalidUrl('The link is missing a website address.');
@@ -85,8 +84,7 @@ abstract final class UrlValidator {
         return false;
       }
     }
-    return RegExp(r'[a-z]', caseSensitive: false).hasMatch(labels.last) ||
-        labels.last.length >= 2;
+    return RegExp(r'[a-z]', caseSensitive: false).hasMatch(labels.last) || labels.last.length >= 2;
   }
 
   /// Heuristic used only for UI hints; yt-dlp decides the real type.

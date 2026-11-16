@@ -56,14 +56,14 @@ class AppSettings {
   final bool useSystemCertificates;
 
   DownloadOptions defaultOptions() => DownloadOptions(
-        destinationDir: downloadDirectory,
-        mode: defaultMode,
-        quality: defaultQuality,
-        container: defaultContainer,
-        audioFormat: defaultAudioFormat,
-        audioQuality: defaultAudioQuality,
-        numberPlaylistItems: numberPlaylistItems,
-      );
+    destinationDir: downloadDirectory,
+    mode: defaultMode,
+    quality: defaultQuality,
+    container: defaultContainer,
+    audioFormat: defaultAudioFormat,
+    audioQuality: defaultAudioQuality,
+    numberPlaylistItems: numberPlaylistItems,
+  );
 
   AppSettings copyWith({
     String? downloadDirectory,
@@ -81,43 +81,44 @@ class AppSettings {
     LogLevelSetting? logLevel,
     bool? notificationsEnabled,
     bool? useSystemCertificates,
-  }) =>
-      AppSettings(
-        downloadDirectory: downloadDirectory ?? this.downloadDirectory,
-        defaultMode: defaultMode ?? this.defaultMode,
-        defaultQuality: defaultQuality ?? this.defaultQuality,
-        defaultContainer: defaultContainer ?? this.defaultContainer,
-        defaultAudioFormat: defaultAudioFormat ?? this.defaultAudioFormat,
-        defaultAudioQuality: defaultAudioQuality ?? this.defaultAudioQuality,
-        maxConcurrentDownloads: (maxConcurrentDownloads ?? this.maxConcurrentDownloads)
-            .clamp(1, AppConfig.maxConcurrentLimit),
-        numberPlaylistItems: numberPlaylistItems ?? this.numberPlaylistItems,
-        skipCompleted: skipCompleted ?? this.skipCompleted,
-        ytDlpPath: ytDlpPath != null ? ytDlpPath() : this.ytDlpPath,
-        ffmpegPath: ffmpegPath != null ? ffmpegPath() : this.ffmpegPath,
-        theme: theme ?? this.theme,
-        logLevel: logLevel ?? this.logLevel,
-        notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-        useSystemCertificates: useSystemCertificates ?? this.useSystemCertificates,
-      );
+  }) => AppSettings(
+    downloadDirectory: downloadDirectory ?? this.downloadDirectory,
+    defaultMode: defaultMode ?? this.defaultMode,
+    defaultQuality: defaultQuality ?? this.defaultQuality,
+    defaultContainer: defaultContainer ?? this.defaultContainer,
+    defaultAudioFormat: defaultAudioFormat ?? this.defaultAudioFormat,
+    defaultAudioQuality: defaultAudioQuality ?? this.defaultAudioQuality,
+    maxConcurrentDownloads: (maxConcurrentDownloads ?? this.maxConcurrentDownloads).clamp(
+      1,
+      AppConfig.maxConcurrentLimit,
+    ),
+    numberPlaylistItems: numberPlaylistItems ?? this.numberPlaylistItems,
+    skipCompleted: skipCompleted ?? this.skipCompleted,
+    ytDlpPath: ytDlpPath != null ? ytDlpPath() : this.ytDlpPath,
+    ffmpegPath: ffmpegPath != null ? ffmpegPath() : this.ffmpegPath,
+    theme: theme ?? this.theme,
+    logLevel: logLevel ?? this.logLevel,
+    notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+    useSystemCertificates: useSystemCertificates ?? this.useSystemCertificates,
+  );
 
   Map<String, Object?> toJson() => {
-        'downloadDirectory': downloadDirectory,
-        'defaultMode': defaultMode.name,
-        'defaultQuality': defaultQuality.name,
-        'defaultContainer': defaultContainer.name,
-        'defaultAudioFormat': defaultAudioFormat.name,
-        'defaultAudioQuality': defaultAudioQuality.name,
-        'maxConcurrentDownloads': maxConcurrentDownloads,
-        'numberPlaylistItems': numberPlaylistItems,
-        'skipCompleted': skipCompleted,
-        'ytDlpPath': ytDlpPath,
-        'ffmpegPath': ffmpegPath,
-        'theme': theme.name,
-        'logLevel': logLevel.name,
-        'notificationsEnabled': notificationsEnabled,
-        'useSystemCertificates': useSystemCertificates,
-      };
+    'downloadDirectory': downloadDirectory,
+    'defaultMode': defaultMode.name,
+    'defaultQuality': defaultQuality.name,
+    'defaultContainer': defaultContainer.name,
+    'defaultAudioFormat': defaultAudioFormat.name,
+    'defaultAudioQuality': defaultAudioQuality.name,
+    'maxConcurrentDownloads': maxConcurrentDownloads,
+    'numberPlaylistItems': numberPlaylistItems,
+    'skipCompleted': skipCompleted,
+    'ytDlpPath': ytDlpPath,
+    'ffmpegPath': ffmpegPath,
+    'theme': theme.name,
+    'logLevel': logLevel.name,
+    'notificationsEnabled': notificationsEnabled,
+    'useSystemCertificates': useSystemCertificates,
+  };
 
   /// Tolerant parsing: unknown or malformed values fall back to defaults.
   factory AppSettings.fromJson(Map<String, Object?> json, {required String fallbackDirectory}) {
@@ -135,18 +136,13 @@ class AppSettings {
       defaultContainer: ContainerFormat.fromName(str('defaultContainer')),
       defaultAudioFormat: AudioFormat.fromName(str('defaultAudioFormat')),
       defaultAudioQuality: AudioQuality.fromName(str('defaultAudioQuality')),
-      maxConcurrentDownloads: concurrency is int
-          ? concurrency.clamp(1, AppConfig.maxConcurrentLimit)
-          : 2,
+      maxConcurrentDownloads: concurrency is int ? concurrency.clamp(1, AppConfig.maxConcurrentLimit) : 2,
       numberPlaylistItems: flag('numberPlaylistItems', true),
       skipCompleted: flag('skipCompleted', true),
       ytDlpPath: str('ytDlpPath'),
       ffmpegPath: str('ffmpegPath'),
       theme: ThemePreference.fromName(str('theme')),
-      logLevel: LogLevelSetting.values.firstWhere(
-        (l) => l.name == str('logLevel'),
-        orElse: () => LogLevelSetting.info,
-      ),
+      logLevel: LogLevelSetting.values.firstWhere((l) => l.name == str('logLevel'), orElse: () => LogLevelSetting.info),
       notificationsEnabled: flag('notificationsEnabled', true),
       useSystemCertificates: flag('useSystemCertificates', true),
     );

@@ -35,8 +35,7 @@ class AppLogger {
   String? _logDirectory;
 
   String? get logDirectory => _logDirectory;
-  String? get currentLogFile =>
-      _logDirectory == null ? null : p.join(_logDirectory!, 'finder.log');
+  String? get currentLogFile => _logDirectory == null ? null : p.join(_logDirectory!, 'finder.log');
 
   /// Initializes the root logger. Safe to call more than once.
   Future<void> init({
@@ -54,7 +53,7 @@ class AppLogger {
       _sink = File(currentLogFile!).openWrite(mode: FileMode.append);
     } catch (e) {
       // Logging must never crash the app; fall back to console only.
-      stderr.writeln('finder: unable to open log file: $e');
+      stderr.writeln('Finder: unable to open log file: $e');
     }
     _sub = Logger.root.onRecord.listen((record) {
       final line = format(record);

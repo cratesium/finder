@@ -6,13 +6,7 @@ import 'app_card.dart';
 
 /// Centered illustration-free empty state.
 class EmptyState extends StatelessWidget {
-  const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.message,
-    this.action,
-  });
+  const EmptyState({super.key, required this.icon, required this.title, this.message, this.action});
 
   final IconData icon;
   final String title;
@@ -31,22 +25,28 @@ class EmptyState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: c.surfaceRaised,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [c.brandStart.withValues(alpha: 0.16), c.brandEnd.withValues(alpha: 0.10)],
+                  ),
                   borderRadius: BorderRadius.circular(Gap.radiusLg),
-                  border: Border.all(color: c.border),
+                  border: Border.all(color: c.accent.withValues(alpha: 0.22)),
                 ),
-                child: Icon(icon, size: 24, color: c.textSecondary),
+                child: Icon(icon, size: 26, color: c.accent),
               ),
               const SizedBox(height: Gap.lg),
               Text(title, style: context.text.titleMedium, textAlign: TextAlign.center),
               if (message != null) ...[
                 const SizedBox(height: Gap.xs),
-                Text(message!,
-                    textAlign: TextAlign.center,
-                    style: context.text.bodyMedium?.copyWith(color: c.textSecondary)),
+                Text(
+                  message!,
+                  textAlign: TextAlign.center,
+                  style: context.text.bodyMedium?.copyWith(color: c.textSecondary),
+                ),
               ],
               if (action != null) ...[const SizedBox(height: Gap.lg), action!],
             ],
@@ -59,13 +59,7 @@ class EmptyState extends StatelessWidget {
 
 /// Inline banner for errors, warnings and information.
 class InlineBanner extends StatelessWidget {
-  const InlineBanner({
-    super.key,
-    required this.message,
-    this.title,
-    this.tone = BannerTone.info,
-    this.action,
-  });
+  const InlineBanner({super.key, required this.message, this.title, this.tone = BannerTone.info, this.action});
 
   factory InlineBanner.error(AppError e, {Widget? action}) =>
       InlineBanner(title: e.title, message: e.message, tone: BannerTone.danger, action: action);
@@ -77,39 +71,43 @@ class InlineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.palette;
-    final (color, icon) = switch (tone) {
-      BannerTone.info => (c.accent, Icons.info_outline_rounded),
-      BannerTone.warning => (c.warning, Icons.warning_amber_rounded),
-      BannerTone.danger => (c.danger, Icons.error_outline_rounded),
-      BannerTone.success => (c.success, Icons.check_circle_outline_rounded),
-    };
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: Gap.lg, vertical: Gap.md),
-      color: color.withValues(alpha: 0.07),
-      borderColor: color.withValues(alpha: 0.35),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: Icon(icon, size: 18, color: color),
+    return CardScope(
+      builder: (context) {
+        const c = AppPalette.card;
+        final (color, icon) = switch (tone) {
+          BannerTone.info => (c.info, Icons.info_outline_rounded),
+          BannerTone.warning => (c.warning, Icons.warning_amber_rounded),
+          BannerTone.danger => (c.danger, Icons.error_outline_rounded),
+          BannerTone.success => (c.success, Icons.check_circle_outline_rounded),
+        };
+        return AppCard(
+          padding: const EdgeInsets.symmetric(horizontal: Gap.lg, vertical: Gap.md),
+          // Opaque tint so nothing underneath shows through.
+          color: Color.alphaBlend(color.withValues(alpha: 0.08), c.surface),
+          borderColor: color.withValues(alpha: 0.35),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(width: Gap.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title != null) Text(title!, style: context.text.titleSmall?.copyWith(color: c.textPrimary)),
+                    if (title != null) const SizedBox(height: 2),
+                    Text(message, style: context.text.bodyMedium?.copyWith(color: c.textSecondary)),
+                  ],
+                ),
+              ),
+              if (action != null) ...[const SizedBox(width: Gap.md), action!],
+            ],
           ),
-          const SizedBox(width: Gap.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title != null)
-                  Text(title!, style: context.text.titleSmall?.copyWith(color: c.textPrimary)),
-                if (title != null) const SizedBox(height: 2),
-                Text(message, style: context.text.bodyMedium?.copyWith(color: c.textSecondary)),
-              ],
-            ),
-          ),
-          if (action != null) ...[const SizedBox(width: Gap.md), action!],
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -129,7 +127,13 @@ class MediaThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.palette;
     final placeholder = Container(
-      color: c.surfaceHover,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [c.brandStart.withValues(alpha: 0.18), c.brandEnd.withValues(alpha: 0.12)],
+        ),
+      ),
       alignment: Alignment.center,
       child: Icon(Icons.movie_outlined, size: height * 0.35, color: c.textTertiary),
     );
@@ -145,8 +149,7 @@ class MediaThumbnail extends StatelessWidget {
                 fit: BoxFit.cover,
                 cacheWidth: (width * 2).round(),
                 errorBuilder: (_, _, _) => placeholder,
-                frameBuilder: (_, child, frame, sync) =>
-                    sync || frame != null ? child : placeholder,
+                frameBuilder: (_, child, frame, sync) => sync || frame != null ? child : placeholder,
               ),
       ),
     );
@@ -163,38 +166,44 @@ class FieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final narrow = constraints.maxWidth < 560;
-      final labelCol = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: context.text.titleSmall),
-          if (description != null) ...[
-            const SizedBox(height: 2),
-            Text(description!, style: context.text.bodySmall),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 560;
+        final labelCol = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: context.text.titleSmall),
+            if (description != null) ...[const SizedBox(height: 2), Text(description!, style: context.text.bodySmall)],
           ],
-        ],
-      );
-      if (narrow) {
+        );
+        if (narrow) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: Gap.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                labelCol,
+                const SizedBox(height: Gap.sm),
+                child,
+              ],
+            ),
+          );
+        }
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: Gap.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [labelCol, const SizedBox(height: Gap.sm), child],
+          child: Row(
+            children: [
+              Expanded(flex: 5, child: labelCol),
+              const SizedBox(width: Gap.xl),
+              Expanded(
+                flex: 6,
+                child: Align(alignment: Alignment.centerRight, child: child),
+              ),
+            ],
           ),
         );
-      }
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: Gap.md),
-        child: Row(
-          children: [
-            Expanded(flex: 5, child: labelCol),
-            const SizedBox(width: Gap.xl),
-            Expanded(flex: 6, child: Align(alignment: Alignment.centerRight, child: child)),
-          ],
-        ),
-      );
-    });
+      },
+    );
   }
 }
 
@@ -228,7 +237,7 @@ class AppDropdown<T> extends StatelessWidget {
         padding: const EdgeInsets.only(left: 12, right: 6),
         decoration: BoxDecoration(
           color: c.surfaceRaised,
-          borderRadius: BorderRadius.circular(Gap.radiusSm + 2),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(color: c.border),
         ),
         child: DropdownButtonHideUnderline(
@@ -237,7 +246,7 @@ class AppDropdown<T> extends StatelessWidget {
             isExpanded: true,
             isDense: false,
             itemHeight: 48,
-            dropdownColor: c.surfaceRaised,
+            dropdownColor: c.surface,
             borderRadius: BorderRadius.circular(Gap.radiusMd),
             focusColor: Colors.transparent,
             icon: Icon(Icons.expand_more_rounded, size: 18, color: c.textSecondary),
@@ -248,13 +257,9 @@ class AppDropdown<T> extends StatelessWidget {
                   value: item,
                   enabled: isEnabled?.call(item) ?? true,
                   child: Text(
-                    (isEnabled?.call(item) ?? true)
-                        ? labelOf(item)
-                        : '${labelOf(item)}$disabledSuffix',
+                    (isEnabled?.call(item) ?? true) ? labelOf(item) : '${labelOf(item)}$disabledSuffix',
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: (isEnabled?.call(item) ?? true) ? c.textPrimary : c.textTertiary,
-                    ),
+                    style: TextStyle(color: (isEnabled?.call(item) ?? true) ? c.textPrimary : c.textTertiary),
                   ),
                 ),
             ],

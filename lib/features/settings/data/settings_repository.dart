@@ -26,8 +26,7 @@ class SqliteSettingsRepository implements SettingsRepository {
       if (rows.isEmpty) return AppSettings(downloadDirectory: fallbackDirectory);
       final decoded = jsonDecode(rows.first['value'] as String);
       if (decoded is! Map) return AppSettings(downloadDirectory: fallbackDirectory);
-      return AppSettings.fromJson(decoded.cast<String, Object?>(),
-          fallbackDirectory: fallbackDirectory);
+      return AppSettings.fromJson(decoded.cast<String, Object?>(), fallbackDirectory: fallbackDirectory);
     } on FormatException catch (e) {
       _log.warning('settings were corrupted; using defaults', e);
       return AppSettings(downloadDirectory: fallbackDirectory);
@@ -40,11 +39,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> save(AppSettings settings) async {
     try {
-      await _db.insert(
-        'settings',
-        {'key': _key, 'value': jsonEncode(settings.toJson())},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await _db.insert('settings', {
+        'key': _key,
+        'value': jsonEncode(settings.toJson()),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } on DatabaseException catch (e) {
       _log.severe('failed to save settings', e);
       throw AppError.of(AppErrorKind.storage, detail: e.toString());

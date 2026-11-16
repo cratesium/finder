@@ -43,10 +43,14 @@ final sampleVideo = MediaInfo(
   sourceUrl: 'https://www.youtube.com/watch?v=v',
   extractor: 'Youtube',
   entries: [
-    entry('v', title: 'Single Lesson', formats: const [
-      MediaFormat(formatId: '136', width: 1280, height: 720, vcodec: 'avc1', acodec: 'none'),
-      MediaFormat(formatId: '140', vcodec: 'none', acodec: 'mp4a'),
-    ]),
+    entry(
+      'v',
+      title: 'Single Lesson',
+      formats: const [
+        MediaFormat(formatId: '136', width: 1280, height: 720, vcodec: 'avc1', acodec: 'none'),
+        MediaFormat(formatId: '140', vcodec: 'none', acodec: 'mp4a'),
+      ],
+    ),
   ],
 );
 
@@ -95,4 +99,3 @@ class Harness {
     return ProviderScope.containerOf(tester.element(find.byType(FinderApp)));
   }
 }
-

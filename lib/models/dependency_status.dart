@@ -9,9 +9,8 @@ enum DependencyKind {
 
 enum DependencySource {
   custom('Custom path'),
-  managed('Installed by finder'),
-  bundled('Bundled with app'),
-  system('System');
+  managed('Updated in Finder'),
+  bundled('Built into Finder');
 
   const DependencySource(this.label);
   final String label;
@@ -20,20 +19,13 @@ enum DependencySource {
 enum DependencyState { ready, missing, invalid }
 
 class DependencyStatus {
-  const DependencyStatus({
-    required this.kind,
-    required this.state,
-    this.path,
-    this.version,
-    this.source,
-    this.message,
-  });
+  const DependencyStatus({required this.kind, required this.state, this.path, this.version, this.source, this.message});
 
   const DependencyStatus.missing(this.kind, {this.message})
-      : state = DependencyState.missing,
-        path = null,
-        version = null,
-        source = null;
+    : state = DependencyState.missing,
+      path = null,
+      version = null,
+      source = null;
 
   final DependencyKind kind;
   final DependencyState state;
@@ -54,6 +46,5 @@ class DependencySnapshot {
 
   bool get allReady => ytDlp.isReady && ffmpeg.isReady;
 
-  DependencyStatus of(DependencyKind kind) =>
-      kind == DependencyKind.ytDlp ? ytDlp : ffmpeg;
+  DependencyStatus of(DependencyKind kind) => kind == DependencyKind.ytDlp ? ytDlp : ffmpeg;
 }

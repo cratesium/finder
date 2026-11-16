@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome brand: neutral surfaces only. -->
+<resources>
+    <color name="launch_background">#FFFFFFFF</color>
+    <color name="brand_ink">#FF0A0A0A</color>
+    <color name="ic_launcher_background">#FF111111</color>
+</resources>

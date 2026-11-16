@@ -44,7 +44,18 @@ class EntryListSliver extends ConsumerWidget {
                 const SizedBox(width: Gap.xs),
                 Text(info.isPlaylist ? 'Videos' : 'Video', style: context.text.titleSmall),
                 const SizedBox(width: Gap.sm),
-                Text('$selectedCount of $selectable selected', style: context.text.bodySmall),
+                Expanded(
+                  child: Text(
+                    '$selectedCount of $selectable selected',
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall,
+                  ),
+                ),
+                if (selectable > 0)
+                  TextButton(
+                    onPressed: () => ref.read(dashboardProvider.notifier).selectAll(!allSelected),
+                    child: Text(allSelected ? 'Deselect all' : 'Select all'),
+                  ),
               ],
             ),
           ),
@@ -92,12 +103,7 @@ class SliverDecoratedBoxSliver extends StatelessWidget {
 }
 
 class _EntryRow extends StatelessWidget {
-  const _EntryRow({
-    required this.entry,
-    required this.selected,
-    required this.isLast,
-    required this.onToggle,
-  });
+  const _EntryRow({required this.entry, required this.selected, required this.isLast, required this.onToggle});
 
   final MediaEntry entry;
   final bool selected;
@@ -131,7 +137,9 @@ class _EntryRow extends StatelessWidget {
                   entry.playlistIndex?.toString() ?? '',
                   textAlign: TextAlign.right,
                   style: context.text.labelMedium?.copyWith(
-                      color: c.textTertiary, fontFeatures: const [FontFeature.tabularFigures()]),
+                    color: c.textTertiary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
               const SizedBox(width: Gap.md),
@@ -141,14 +149,15 @@ class _EntryRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(entry.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    Text(
+                      entry.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                    ),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text(subtitle,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+                      Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
                     ],
                   ],
                 ),
@@ -157,9 +166,10 @@ class _EntryRow extends StatelessWidget {
               if (!available)
                 StatusChip(label: entry.availability.label, tone: ChipTone.warning)
               else
-                Text(Fmt.duration(entry.duration),
-                    style: context.text.labelMedium
-                        ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+                Text(
+                  Fmt.duration(entry.duration),
+                  style: context.text.labelMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                ),
               const SizedBox(width: Gap.sm),
             ],
           ),

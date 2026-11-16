@@ -7,25 +7,25 @@ import '../../models/media_info.dart';
 ///
 /// Pure function; runs inside an isolate for large playlists.
 abstract final class MetadataParser {
-  static const _unavailableTitles = {
-    '[private video]',
-    '[deleted video]',
-    '[unavailable video]',
-  };
+  static const _unavailableTitles = {'[private video]', '[deleted video]', '[unavailable video]'};
 
   static MediaInfo parseJson(String jsonText, {required String sourceUrl}) {
     final Object? decoded;
     try {
       decoded = jsonDecode(jsonText);
     } on FormatException catch (e) {
-      throw AppError(AppErrorKind.unknown,
-          'yt-dlp returned data finder couldn\'t understand.',
-          detail: 'invalid JSON: ${e.message}');
+      throw AppError(
+        AppErrorKind.unknown,
+        'yt-dlp returned data Finder couldn\'t understand.',
+        detail: 'invalid JSON: ${e.message}',
+      );
     }
     if (decoded is! Map<String, Object?>) {
-      throw const AppError(AppErrorKind.unknown,
-          'yt-dlp returned data finder couldn\'t understand.',
-          detail: 'top-level JSON is not an object');
+      throw const AppError(
+        AppErrorKind.unknown,
+        'yt-dlp returned data Finder couldn\'t understand.',
+        detail: 'top-level JSON is not an object',
+      );
     }
     return parse(decoded, sourceUrl: sourceUrl);
   }
@@ -39,14 +39,16 @@ abstract final class MetadataParser {
       for (var i = 0; i < rawEntries.length; i++) {
         final raw = rawEntries[i];
         if (raw is! Map<String, Object?>) {
-          entries.add(MediaEntry(
-            id: 'missing-${i + 1}',
-            title: 'Unavailable item',
-            url: '',
-            extractor: extractor,
-            playlistIndex: i + 1,
-            availability: EntryAvailability.unavailable,
-          ));
+          entries.add(
+            MediaEntry(
+              id: 'missing-${i + 1}',
+              title: 'Unavailable item',
+              url: '',
+              extractor: extractor,
+              playlistIndex: i + 1,
+              availability: EntryAvailability.unavailable,
+            ),
+          );
           continue;
         }
         entries.add(_entry(raw, fallbackIndex: i + 1, fallbackExtractor: extractor));
@@ -59,15 +61,15 @@ abstract final class MetadataParser {
         extractor: extractor,
         entries: entries,
         uploader: _s(json['channel']) ?? _s(json['uploader']),
-        thumbnailUrl: _thumbnail(json) ??
-            entries.map((e) => e.thumbnailUrl).whereType<String>().firstOrNull,
+        thumbnailUrl: _thumbnail(json) ?? entries.map((e) => e.thumbnailUrl).whereType<String>().firstOrNull,
         description: _s(json['description']),
         reportedCount: _i(json['playlist_count']),
       );
     }
 
     final formats = _formats(json);
-    final hasDrmOnly = formats.isEmpty &&
+    final hasDrmOnly =
+        formats.isEmpty &&
         (json['formats'] as List?)?.isNotEmpty == true &&
         (json['formats'] as List).every((f) => f is Map && f['has_drm'] == true);
     if (hasDrmOnly) throw AppError.of(AppErrorKind.drmProtected);
@@ -102,9 +104,7 @@ abstract final class MetadataParser {
       url: url,
       extractor: _extractor(e, fallback: fallbackExtractor),
       thumbnailUrl: _thumbnail(e),
-      duration: durationSec == null || durationSec <= 0
-          ? null
-          : Duration(milliseconds: (durationSec * 1000).round()),
+      duration: durationSec == null || durationSec <= 0 ? null : Duration(milliseconds: (durationSec * 1000).round()),
       playlistIndex: _i(e['playlist_index']) ?? fallbackIndex,
       uploader: _s(e['channel']) ?? _s(e['uploader']),
       availability: _availability(e, title, url),
@@ -114,9 +114,7 @@ abstract final class MetadataParser {
 
   static EntryAvailability _availability(Map<String, Object?> e, String title, String url) {
     if (_unavailableTitles.contains(title.toLowerCase())) {
-      return title.toLowerCase().contains('private')
-          ? EntryAvailability.private
-          : EntryAvailability.unavailable;
+      return title.toLowerCase().contains('private') ? EntryAvailability.private : EntryAvailability.unavailable;
     }
     final type = _s(e['_type']);
     final ieKey = (_s(e['ie_key']) ?? '').toLowerCase();
@@ -149,18 +147,20 @@ abstract final class MetadataParser {
       if (id == null) continue;
       // Storyboards / images aren't media.
       if (_s(f['ext']) == 'mhtml') continue;
-      out.add(MediaFormat(
-        formatId: id,
-        ext: _s(f['ext']),
-        width: _i(f['width']),
-        height: _i(f['height']),
-        fps: _d(f['fps']),
-        vcodec: _s(f['vcodec']),
-        acodec: _s(f['acodec']),
-        filesize: _i(f['filesize']) ?? _i(f['filesize_approx']),
-        bitrate: _d(f['tbr']),
-        note: _s(f['format_note']),
-      ));
+      out.add(
+        MediaFormat(
+          formatId: id,
+          ext: _s(f['ext']),
+          width: _i(f['width']),
+          height: _i(f['height']),
+          fps: _d(f['fps']),
+          vcodec: _s(f['vcodec']),
+          acodec: _s(f['acodec']),
+          filesize: _i(f['filesize']) ?? _i(f['filesize_approx']),
+          bitrate: _d(f['tbr']),
+          note: _s(f['format_note']),
+        ),
+      );
     }
     return out;
   }

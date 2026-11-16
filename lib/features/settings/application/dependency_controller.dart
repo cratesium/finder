@@ -26,8 +26,7 @@ final ytDlpNetworkProvider = FutureProvider<YtDlpNetworkConfig>((ref) {
   return ref.read(trustStoreServiceProvider).build(useSystemCertificates: useSystem);
 });
 
-final dependencyProvider =
-    AsyncNotifierProvider<DependencyController, DependencySnapshot>(DependencyController.new);
+final dependencyProvider = AsyncNotifierProvider<DependencyController, DependencySnapshot>(DependencyController.new);
 
 /// Progress of an install/update operation.
 class InstallState {
@@ -46,17 +45,25 @@ class InstallController extends Notifier<Map<DependencyKind, InstallState>> {
     if (state[kind]?.running ?? false) return false;
     _set(kind, const InstallState(running: true, stage: 'Starting'));
     try {
-      await ref.read(dependencyManagerProvider).install(kind, onProgress: (f, stage) {
-        _set(kind, InstallState(running: true, fraction: f, stage: stage));
-      });
+      await ref
+          .read(dependencyManagerProvider)
+          .install(
+            kind,
+            onProgress: (f, stage) {
+              _set(kind, InstallState(running: true, fraction: f, stage: stage));
+            },
+          );
       _set(kind, const InstallState());
       // Prefer the freshly installed copy over any custom path.
       final settings = ref.read(settingsProvider);
       final hasCustom = kind == DependencyKind.ytDlp ? settings.ytDlpPath != null : settings.ffmpegPath != null;
       if (hasCustom) {
-        await ref.read(settingsProvider.notifier).change((s) => kind == DependencyKind.ytDlp
-            ? s.copyWith(ytDlpPath: () => null)
-            : s.copyWith(ffmpegPath: () => null));
+        await ref
+            .read(settingsProvider.notifier)
+            .change(
+              (s) =>
+                  kind == DependencyKind.ytDlp ? s.copyWith(ytDlpPath: () => null) : s.copyWith(ffmpegPath: () => null),
+            );
       }
       await ref.read(dependencyProvider.notifier).recheck();
       return true;
@@ -72,5 +79,4 @@ class InstallController extends Notifier<Map<DependencyKind, InstallState>> {
   void _set(DependencyKind kind, InstallState s) => state = {...state, kind: s};
 }
 
-final installProvider =
-    NotifierProvider<InstallController, Map<DependencyKind, InstallState>>(InstallController.new);
+final installProvider = NotifierProvider<InstallController, Map<DependencyKind, InstallState>>(InstallController.new);

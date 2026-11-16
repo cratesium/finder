@@ -9,6 +9,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/path_utils.dart';
 import '../../../../models/download_options.dart';
 import '../../../../widgets/app_card.dart';
+import '../../../../widgets/brand.dart';
 import '../../../../widgets/common.dart';
 import '../../../../widgets/feedback.dart';
 import '../../../settings/application/dependency_controller.dart';
@@ -21,7 +22,7 @@ class DownloadOptionsPanel extends ConsumerWidget {
     final dir = await ref.read(directoryPickerProvider).pickDirectory(initialDirectory: o.destinationDir);
     if (dir == null) return;
     if (!await PathUtils.ensureWritableDirectory(dir)) {
-      if (context.mounted) showToast(context, 'finder can\'t write to that folder. Choose another one.');
+      if (context.mounted) showToast(context, 'Finder can\'t write to that folder. Choose another one.');
       return;
     }
     ref.read(dashboardProvider.notifier).setOptions(o.copyWith(destinationDir: dir));
@@ -33,153 +34,239 @@ class DownloadOptionsPanel extends ConsumerWidget {
     showToast(
       context,
       result.describe(),
-      action: result.added > 0
-          ? SnackBarAction(label: 'View', onPressed: () => context.go(Routes.downloads))
-          : null,
+      action: result.added > 0 ? SnackBarAction(label: 'View', onPressed: () => context.go(Routes.downloads)) : null,
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.palette;
-    final state = ref.watch(dashboardProvider);
-    final info = state.info!;
-    final o = state.options;
-    final deps = ref.watch(dependencyProvider).value;
-    final ffmpegReady = deps?.ffmpeg.isReady ?? false;
-    final ytDlpReady = deps?.ytDlp.isReady ?? false;
-    final available = state.availableQualities;
-    final count = state.selectedEntries.length;
-    void set(DownloadOptions next) => ref.read(dashboardProvider.notifier).setOptions(next);
+    return CardScope(
+      builder: (context) {
+        final c = context.palette;
+        final state = ref.watch(dashboardProvider);
+        final info = state.info!;
+        final o = state.options;
+        final deps = ref.watch(dependencyProvider).value;
+        final ffmpegReady = deps?.ffmpeg.isReady ?? false;
+        final ytDlpReady = deps?.ytDlp.isReady ?? false;
+        final available = state.availableQualities;
+        final count = state.selectedEntries.length;
+        void set(DownloadOptions next) => ref.read(dashboardProvider.notifier).setOptions(next);
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Download options', style: context.text.titleMedium),
-          const SizedBox(height: Gap.lg),
-          const SectionLabel('Download as'),
-          SegmentedButton<DownloadMode>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: DownloadMode.video, label: Text('Video'), icon: Icon(Icons.movie_outlined, size: 16)),
-              ButtonSegment(value: DownloadMode.audioOnly, label: Text('Audio only'), icon: Icon(Icons.graphic_eq_rounded, size: 16)),
-            ],
-            selected: {o.mode},
-            onSelectionChanged: (s) => set(o.copyWith(mode: s.first)),
-          ),
-          const SizedBox(height: Gap.lg),
-          if (!o.isAudioOnly) ...[
-            const SectionLabel('Quality'),
-            AppDropdown<VideoQuality>(
-              key: const Key('quality-dropdown'),
-              width: double.infinity,
-              value: available.contains(o.quality) ? o.quality : VideoQuality.best,
-              items: VideoQuality.values,
-              labelOf: (q) => q.label,
-              isEnabled: available.contains,
-              onChanged: (q) => set(o.copyWith(quality: q)),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              info.isPlaylist
-                  ? 'Each video uses the best stream at or below this quality. You\'ll be told if a video doesn\'t offer it.'
-                  : 'Only resolutions this video actually offers can be selected.',
-              style: context.text.bodySmall,
-            ),
-            const SizedBox(height: Gap.lg),
-            const SectionLabel('Container'),
-            AppDropdown<ContainerFormat>(
-              width: double.infinity,
-              value: o.container,
-              items: ContainerFormat.values,
-              labelOf: (f) => f.label,
-              onChanged: (f) => set(o.copyWith(container: f)),
-            ),
-            const SizedBox(height: 6),
-            Text('Streams are merged without re-encoding, preserving source quality.',
-                style: context.text.bodySmall),
-          ] else ...[
-            const SectionLabel('Audio format'),
-            AppDropdown<AudioFormat>(
-              width: double.infinity,
-              value: o.audioFormat,
-              items: AudioFormat.values,
-              labelOf: (f) => f.label,
-              onChanged: (f) => set(o.copyWith(audioFormat: f)),
-            ),
-            if (o.audioFormat == AudioFormat.mp3) ...[
-              const SizedBox(height: Gap.md),
-              const SectionLabel('MP3 quality'),
-              AppDropdown<AudioQuality>(
-                width: double.infinity,
-                value: o.audioQuality,
-                items: AudioQuality.values,
-                labelOf: (q) => q.label,
-                onChanged: (q) => set(o.copyWith(audioQuality: q)),
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Download options', style: context.text.titleMedium),
+              const SizedBox(height: 2),
+              Text(o.summary, style: context.text.bodySmall),
+              const SizedBox(height: Gap.lg),
+              const SectionLabel('Download as'),
+              PillSelector<DownloadMode>(
+                value: o.mode,
+                items: const [DownloadMode.video, DownloadMode.audioOnly],
+                labelOf: (m) => m == DownloadMode.video ? 'Video' : 'Audio only',
+                iconOf: (m) => m == DownloadMode.video ? Icons.movie_outlined : Icons.graphic_eq_rounded,
+                onChanged: (m) => set(o.copyWith(mode: m)),
               ),
-              const SizedBox(height: 6),
-              Text('MP3 requires re-encoding, which can\'t exceed the source quality.',
-                  style: context.text.bodySmall),
+              const SizedBox(height: Gap.lg),
+              if (!o.isAudioOnly) ...[
+                const SectionLabel('Quality'),
+                if (info.isPlaylist)
+                  AppDropdown<VideoQuality>(
+                    key: const Key('quality-dropdown'),
+                    width: double.infinity,
+                    value: available.contains(o.quality) ? o.quality : VideoQuality.best,
+                    items: VideoQuality.values,
+                    labelOf: (q) => q.label,
+                    isEnabled: available.contains,
+                    onChanged: (q) => set(o.copyWith(quality: q)),
+                  )
+                else
+                  _QualityChips(
+                    value: available.contains(o.quality) ? o.quality : VideoQuality.best,
+                    available: available,
+                    onChanged: (q) => set(o.copyWith(quality: q)),
+                  ),
+                const SizedBox(height: 6),
+                Text(
+                  info.isPlaylist
+                      ? 'Each video uses the best stream at or below this quality. You\'ll be told if a video doesn\'t offer it.'
+                      : 'Only resolutions this video actually offers can be selected.',
+                  style: context.text.bodySmall,
+                ),
+                const SizedBox(height: Gap.lg),
+                const SectionLabel('Container'),
+                AppDropdown<ContainerFormat>(
+                  width: double.infinity,
+                  value: o.container,
+                  items: ContainerFormat.values,
+                  labelOf: (f) => f.label,
+                  onChanged: (f) => set(o.copyWith(container: f)),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Streams are merged without re-encoding, preserving source quality.',
+                  style: context.text.bodySmall,
+                ),
+              ] else ...[
+                const SectionLabel('Audio format'),
+                AppDropdown<AudioFormat>(
+                  width: double.infinity,
+                  value: o.audioFormat,
+                  items: AudioFormat.values,
+                  labelOf: (f) => f.label,
+                  onChanged: (f) => set(o.copyWith(audioFormat: f)),
+                ),
+                if (o.audioFormat == AudioFormat.mp3) ...[
+                  const SizedBox(height: Gap.md),
+                  const SectionLabel('MP3 quality'),
+                  AppDropdown<AudioQuality>(
+                    width: double.infinity,
+                    value: o.audioQuality,
+                    items: AudioQuality.values,
+                    labelOf: (q) => q.label,
+                    onChanged: (q) => set(o.copyWith(audioQuality: q)),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'MP3 requires re-encoding, which can\'t exceed the source quality.',
+                    style: context.text.bodySmall,
+                  ),
+                ],
+              ],
+              const SizedBox(height: Gap.lg),
+              const SectionLabel('Save to'),
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+                decoration: BoxDecoration(
+                  color: c.surfaceRaised,
+                  borderRadius: BorderRadius.circular(Gap.radiusMd),
+                  border: Border.all(color: c.border),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.folder_outlined, size: 16, color: c.textTertiary),
+                    const SizedBox(width: Gap.sm),
+                    Expanded(
+                      child: Tooltip(
+                        message: PathUtils.displayPath(o.destinationDir),
+                        child: Text(
+                          PathUtils.displayPath(o.destinationDir),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.bodySmall,
+                        ),
+                      ),
+                    ),
+                    // Android saves to the public Download/Finder folder; iOS to
+                    // the app's Documents (visible in the Files app).
+                    if (ref.read(platformInfoProvider).isDesktop)
+                      TextButton(onPressed: () => _pickFolder(context, ref, o), child: const Text('Change')),
+                  ],
+                ),
+              ),
+              if (info.isPlaylist) ...[
+                const SizedBox(height: Gap.sm),
+                Text('Saved in a sub-folder named after the playlist.', style: context.text.bodySmall),
+                const SizedBox(height: Gap.sm),
+                Row(
+                  children: [
+                    Expanded(child: Text('Number files by playlist position', style: context.text.bodyMedium)),
+                    Switch(
+                      value: o.numberPlaylistItems,
+                      onChanged: (v) => set(o.copyWith(numberPlaylistItems: v)),
+                    ),
+                  ],
+                ),
+              ],
+              if (deps != null && !ffmpegReady) ...[
+                const SizedBox(height: Gap.lg),
+                InlineBanner(
+                  tone: BannerTone.warning,
+                  message: o.isAudioOnly
+                      ? 'FFmpeg is required to extract audio.'
+                      : 'FFmpeg is required to merge video and audio.',
+                  action: TextButton(onPressed: () => context.go(Routes.settings), child: const Text('Fix')),
+                ),
+              ],
+              const SizedBox(height: Gap.xl),
+              KeyedSubtree(
+                key: const Key('download-button'),
+                child: GradientButton(
+                  expand: true,
+                  height: 48,
+                  loading: state.enqueueing,
+                  onPressed: count == 0 || !ytDlpReady || state.enqueueing ? null : () => _download(context, ref),
+                  icon: Icons.download_rounded,
+                  label: count == 0
+                      ? 'Select videos to download'
+                      : info.isPlaylist
+                      ? (count == info.downloadableCount && count > 1
+                            ? 'Download all ${Fmt.plural(count, 'video')}'
+                            : 'Download ${Fmt.plural(count, 'video')}')
+                      : (o.isAudioOnly ? 'Download audio' : 'Download video'),
+                ),
+              ),
             ],
-          ],
-          const SizedBox(height: Gap.lg),
-          const SectionLabel('Save to'),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
-            decoration: BoxDecoration(
-              color: c.surfaceRaised,
-              borderRadius: BorderRadius.circular(Gap.radiusSm + 2),
-              border: Border.all(color: c.border),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.folder_outlined, size: 16, color: c.textTertiary),
-                const SizedBox(width: Gap.sm),
-                Expanded(
-                  child: Tooltip(
-                    message: PathUtils.displayPath(o.destinationDir),
-                    child: Text(PathUtils.displayPath(o.destinationDir),
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Resolution chips for a single video: only what the video offers is enabled.
+class _QualityChips extends StatelessWidget {
+  const _QualityChips({required this.value, required this.available, required this.onChanged});
+  final VideoQuality value;
+  final Set<VideoQuality> available;
+  final ValueChanged<VideoQuality> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.palette;
+    return Wrap(
+      key: const Key('quality-chips'),
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final q in VideoQuality.values)
+          Builder(
+            builder: (context) {
+              final enabled = available.contains(q);
+              final selected = q == value;
+              final label = q.height == null ? 'Best' : '${q.height}p${q.height! >= 2160 ? ' 4K' : ''}';
+              return Tooltip(
+                message: enabled ? q.label : '${q.label} — not offered by this video',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(Gap.radiusSm),
+                  onTap: enabled ? () => onChanged(q) : null,
+                  child: AnimatedContainer(
+                    duration: Motion.fast,
+                    curve: Motion.curve,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      gradient: selected ? c.brandGradient : null,
+                      color: selected ? null : (enabled ? c.surfaceRaised : Colors.transparent),
+                      borderRadius: BorderRadius.circular(Gap.radiusSm),
+                      border: Border.all(color: selected ? Colors.transparent : c.border),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? c.onAccent : (enabled ? c.textPrimary : c.textTertiary),
+                        decoration: enabled ? null : TextDecoration.lineThrough,
+                      ),
+                    ),
                   ),
                 ),
-                TextButton(onPressed: () => _pickFolder(context, ref, o), child: const Text('Change')),
-              ],
-            ),
+              );
+            },
           ),
-          if (info.isPlaylist) ...[
-            const SizedBox(height: Gap.sm),
-            Text('Saved in a sub-folder named after the playlist.', style: context.text.bodySmall),
-            const SizedBox(height: Gap.sm),
-            Row(
-              children: [
-                Expanded(child: Text('Number files by playlist position', style: context.text.bodyMedium)),
-                Switch(
-                  value: o.numberPlaylistItems,
-                  onChanged: (v) => set(o.copyWith(numberPlaylistItems: v)),
-                ),
-              ],
-            ),
-          ],
-          if (deps != null && !ffmpegReady) ...[
-            const SizedBox(height: Gap.lg),
-            InlineBanner(
-              tone: BannerTone.warning,
-              message: o.isAudioOnly
-                  ? 'FFmpeg is required to extract audio.'
-                  : 'FFmpeg is required to merge video and audio.',
-              action: TextButton(onPressed: () => context.go(Routes.settings), child: const Text('Fix')),
-            ),
-          ],
-          const SizedBox(height: Gap.xl),
-          FilledButton.icon(
-            key: const Key('download-button'),
-            onPressed: count == 0 || !ytDlpReady || state.enqueueing ? null : () => _download(context, ref),
-            icon: const Icon(Icons.download_rounded, size: 18),
-            label: Text(count == 0 ? 'Select videos to download' : 'Download ${Fmt.plural(count, 'video')}'),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

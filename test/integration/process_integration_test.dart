@@ -113,12 +113,12 @@ void main() {
     });
 
     DownloadJobSpec spec(String url) => DownloadJobSpec(
-          url: url,
-          options: DownloadOptions(destinationDir: out.path),
-          directory: out.path,
-          outputTemplate: YtDlpArgs.outputTemplate(),
-          ytDlpPath: ytDlp,
-        );
+      url: url,
+      options: DownloadOptions(destinationDir: out.path),
+      directory: out.path,
+      outputTemplate: YtDlpArgs.outputTemplate(),
+      ytDlpPath: ytDlp,
+    );
 
     test('parses real progress output and reports the finished file', () async {
       final job = await YtDlpDownloaderService(processes).start(spec('https://fake.test/ok'));
@@ -205,11 +205,16 @@ void main() {
     });
 
     test('network config adds args and environment to the process', () async {
-      final echo = await writeScript(tmp, 'yt-dlp-env',
-          r'printf "{\"id\":\"e\",\"title\":\"%s|%s\",\"webpage_url\":\"https://x.test/e\"}" "$SSL_CERT_FILE" "$*"');
-      final info = await YtDlpMetadataService(processes).fetch('https://x.test/e',
-          ytDlpPath: echo,
-          network: const YtDlpNetworkConfig(useSystemCertificates: true, caBundlePath: '/certs/roots.pem'));
+      final echo = await writeScript(
+        tmp,
+        'yt-dlp-env',
+        r'printf "{\"id\":\"e\",\"title\":\"%s|%s\",\"webpage_url\":\"https://x.test/e\"}" "$SSL_CERT_FILE" "$*"',
+      );
+      final info = await YtDlpMetadataService(processes).fetch(
+        'https://x.test/e',
+        ytDlpPath: echo,
+        network: const YtDlpNetworkConfig(useSystemCertificates: true, caBundlePath: '/certs/roots.pem'),
+      );
       expect(info.title, startsWith('/certs/roots.pem|'));
       expect(info.title, contains('--compat-options no-certifi'));
     });
@@ -226,8 +231,10 @@ void main() {
     test('times out', () async {
       final slow = await writeScript(tmp, 'yt-dlp-slow', 'sleep 30');
       final svc = YtDlpMetadataService(processes, timeout: const Duration(milliseconds: 300));
-      await expectLater(svc.fetch('https://fake.test/x', ytDlpPath: slow),
-          throwsA(isA<AppError>().having((e) => e.kind, 'kind', AppErrorKind.timeout)));
+      await expectLater(
+        svc.fetch('https://fake.test/x', ytDlpPath: slow),
+        throwsA(isA<AppError>().having((e) => e.kind, 'kind', AppErrorKind.timeout)),
+      );
     });
   });
 
@@ -235,15 +242,15 @@ void main() {
     late Directory managed, pathDir;
 
     DependencyManager manager({List<String> path = const []}) => DependencyManager(
-          platform: PlatformInfo(
-            os: HostOs.macos,
-            arch: HostArch.arm64,
-            resolvedExecutable: p.join(tmp.path, 'App.app', 'Contents', 'MacOS', 'finder'),
-            environment: {'PATH': path.join(':'), 'HOME': tmp.path},
-          ),
-          processes: processes,
-          managedBinDir: managed.path,
-        );
+      platform: PlatformInfo(
+        os: HostOs.macos,
+        arch: HostArch.arm64,
+        resolvedExecutable: p.join(tmp.path, 'App.app', 'Contents', 'MacOS', 'Finder'),
+        environment: {'PATH': path.join(':'), 'HOME': tmp.path},
+      ),
+      processes: processes,
+      managedBinDir: managed.path,
+    );
 
     setUp(() async {
       managed = await Directory(p.join(tmp.path, 'managed')).create();
@@ -260,32 +267,53 @@ void main() {
     test('rejects wrong names, non-executables, relative paths and impostors', () async {
       final m = manager();
       final wrongName = await writeScript(pathDir, 'evil', fakeYtDlpScript);
-      expect((await m.validate(DependencyKind.ytDlp, wrongName, DependencySource.custom)).state,
-          DependencyState.invalid);
+      expect(
+        (await m.validate(DependencyKind.ytDlp, wrongName, DependencySource.custom)).state,
+        DependencyState.invalid,
+      );
 
       final notExec = await writeScript(pathDir, 'yt-dlp-noexec', fakeYtDlpScript, executable: false);
       final ne = await m.validate(DependencyKind.ytDlp, notExec, DependencySource.custom);
       expect(ne.state, DependencyState.invalid);
       expect(ne.message, contains('not executable'));
 
-      expect((await m.validate(DependencyKind.ytDlp, 'yt-dlp', DependencySource.custom)).state,
-          DependencyState.invalid);
+      expect(
+        (await m.validate(DependencyKind.ytDlp, 'yt-dlp', DependencySource.custom)).state,
+        DependencyState.invalid,
+      );
 
       final impostor = await writeScript(pathDir, 'yt-dlp-fake', 'echo hello');
-      expect((await m.validate(DependencyKind.ytDlp, impostor, DependencySource.custom)).state,
-          DependencyState.invalid);
+      expect(
+        (await m.validate(DependencyKind.ytDlp, impostor, DependencySource.custom)).state,
+        DependencyState.invalid,
+      );
 
-      expect((await m.validate(DependencyKind.ytDlp, p.join(pathDir.path, 'none'), DependencySource.custom)).state,
-          DependencyState.invalid);
+      expect(
+        (await m.validate(DependencyKind.ytDlp, p.join(pathDir.path, 'none'), DependencySource.custom)).state,
+        DependencyState.invalid,
+      );
     });
 
-    test('resolution prefers the managed copy over PATH', () async {
+    test('resolution uses the managed copy, never PATH', () async {
       await writeScript(pathDir, 'yt-dlp', fakeYtDlpScript);
       var s = await manager(path: [pathDir.path]).resolve(DependencyKind.ytDlp);
-      expect(s.source, DependencySource.system);
+      expect(s.state, DependencyState.missing);
       await writeScript(managed, 'yt-dlp', fakeYtDlpScript);
       s = await manager(path: [pathDir.path]).resolve(DependencyKind.ytDlp);
       expect(s.source, DependencySource.managed);
+    });
+
+    test('uses only the copy bundled in the app, never PATH', () async {
+      await writeScript(pathDir, 'yt-dlp', fakeYtDlpScript);
+      var s = await manager(path: [pathDir.path]).resolve(DependencyKind.ytDlp);
+      expect(s.state, DependencyState.missing);
+
+      final bundled = await Directory(p.join(tmp.path, 'App.app', 'Contents', 'Resources', 'bin', 'yt-dlp_macos'))
+          .create(recursive: true);
+      await writeScript(bundled, 'yt-dlp_macos', fakeYtDlpScript);
+      s = await manager(path: [pathDir.path]).resolve(DependencyKind.ytDlp);
+      expect(s.source, DependencySource.bundled);
+      expect(s.isReady, isTrue);
     });
 
     test('custom paths are never silently replaced', () async {
@@ -302,17 +330,45 @@ void main() {
       expect(snap.ffmpeg.state, DependencyState.missing);
       expect(m.guidance(DependencyKind.ffmpeg), contains('FFmpeg'));
       expect(m.canInstall(DependencyKind.ytDlp), isTrue);
-      expect(m.canInstall(DependencyKind.ffmpeg), isFalse); // no official macOS build
+      // macOS FFmpeg is bundled at packaging time; there's no in-app installer.
+      expect(m.canInstall(DependencyKind.ffmpeg), isFalse);
+    });
+
+    test('Linux finds the tools bundled next to the executable', () async {
+      final bundle = await Directory(p.join(tmp.path, 'opt', 'finder')).create(recursive: true);
+      final linux = DependencyManager(
+        platform: PlatformInfo(
+          os: HostOs.linux,
+          arch: HostArch.arm64,
+          resolvedExecutable: p.join(bundle.path, 'finder'),
+          environment: {'PATH': '', 'HOME': tmp.path},
+        ),
+        processes: processes,
+        managedBinDir: managed.path,
+      );
+      expect(linux.ytDlpOnedir?.asset, 'yt-dlp_linux_aarch64.zip');
+      expect(linux.canInstall(DependencyKind.ytDlp), isTrue);
+      expect(linux.canInstall(DependencyKind.ffmpeg), isTrue);
+      expect((await linux.resolve(DependencyKind.ytDlp)).state, DependencyState.missing);
+
+      final bin = await Directory(p.join(bundle.path, 'bin', 'yt-dlp_linux')).create(recursive: true);
+      await writeScript(bin, 'yt-dlp_linux_aarch64', fakeYtDlpScript);
+      await writeScript(Directory(p.join(bundle.path, 'bin')), 'ffmpeg', fakeFfmpegScript);
+      final snap = await linux.snapshot();
+      expect(snap.ytDlp.source, DependencySource.bundled);
+      expect(snap.ytDlp.isReady, isTrue);
+      expect(snap.ffmpeg.source, DependencySource.bundled);
+      expect(snap.ffmpeg.isReady, isTrue);
     });
 
     test('ffmpeg validation warns when ffprobe is missing', () async {
       final ff = await writeScript(pathDir, 'ffmpeg', fakeFfmpegScript);
-      var s = await manager().validate(DependencyKind.ffmpeg, ff, DependencySource.system);
+      var s = await manager().validate(DependencyKind.ffmpeg, ff, DependencySource.custom);
       expect(s.isReady, isTrue);
       expect(s.version, '7.1.1');
       expect(s.message, contains('ffprobe'));
       await writeScript(pathDir, 'ffprobe', fakeFfmpegScript);
-      s = await manager().validate(DependencyKind.ffmpeg, ff, DependencySource.system);
+      s = await manager().validate(DependencyKind.ffmpeg, ff, DependencySource.custom);
       expect(s.message, isNull);
     });
   });
@@ -322,22 +378,28 @@ void main() {
         PlatformInfo(os: os, arch: HostArch.x64, resolvedExecutable: '/x', environment: const {});
 
     test('disabled means yt-dlp defaults', () async {
-      final c = await TrustStoreService(platform: host(HostOs.macos), dataDir: tmp.path)
-          .build(useSystemCertificates: false);
+      final c = await TrustStoreService(
+        platform: host(HostOs.macos),
+        dataDir: tmp.path,
+      ).build(useSystemCertificates: false);
       expect(c.arguments, isEmpty);
       expect(c.environment, isEmpty);
     });
 
     test('Windows uses the OS store without a bundle', () async {
-      final c = await TrustStoreService(platform: host(HostOs.windows), dataDir: tmp.path)
-          .build(useSystemCertificates: true);
+      final c = await TrustStoreService(
+        platform: host(HostOs.windows),
+        dataDir: tmp.path,
+      ).build(useSystemCertificates: true);
       expect(c.arguments, ['--compat-options', 'no-certifi']);
       expect(c.environment, isEmpty);
     });
 
     test('macOS exports keychain roots to a PEM bundle', () async {
-      final c = await TrustStoreService(platform: host(HostOs.macos), dataDir: tmp.path)
-          .build(useSystemCertificates: true);
+      final c = await TrustStoreService(
+        platform: host(HostOs.macos),
+        dataDir: tmp.path,
+      ).build(useSystemCertificates: true);
       expect(c.caBundlePath, isNotNull);
       expect(File(c.caBundlePath!).readAsStringSync(), contains('BEGIN CERTIFICATE'));
       expect(c.environment['SSL_CERT_FILE'], c.caBundlePath);
@@ -436,12 +498,8 @@ void main() {
       });
       final fb = 'http://127.0.0.1:${flaky.port}';
       final target = File(p.join(tmp.path, 'flaky', 'tool'));
-      await BinaryInstaller(retryDelay: Duration.zero).installAsset(
-        releaseBase: fb,
-        checksumsUrl: Uri.parse('$fb/SUMS'),
-        assetName: 'tool',
-        target: target,
-      );
+      await BinaryInstaller(retryDelay: Duration.zero)
+          .installAsset(releaseBase: fb, checksumsUrl: Uri.parse('$fb/SUMS'), assetName: 'tool', target: target);
       expect(calls, 3);
       expect(await target.readAsBytes(), payload);
       await flaky.close();

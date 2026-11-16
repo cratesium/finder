@@ -10,17 +10,12 @@ class NativeDirectoryPicker implements DirectoryPicker {
   const NativeDirectoryPicker();
 
   @override
-  Future<String?> pickDirectory({String? initialDirectory}) => getDirectoryPath(
-        initialDirectory: initialDirectory,
-        confirmButtonText: 'Choose',
-      );
+  Future<String?> pickDirectory({String? initialDirectory}) =>
+      getDirectoryPath(initialDirectory: initialDirectory, confirmButtonText: 'Choose');
 
   @override
   Future<String?> pickExecutable({String? initialDirectory}) async {
-    final file = await openFile(
-      initialDirectory: initialDirectory,
-      confirmButtonText: 'Use this file',
-    );
+    final file = await openFile(initialDirectory: initialDirectory, confirmButtonText: 'Use this file');
     return file?.path;
   }
 }

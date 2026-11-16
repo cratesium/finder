@@ -63,11 +63,12 @@ class TrustStoreService {
     ];
     if (keychains.isEmpty) return null;
     try {
-      final r = await Process.run(
-        '/usr/bin/security',
-        ['find-certificate', '-a', '-p', ...keychains],
-        runInShell: false,
-      );
+      final r = await Process.run('/usr/bin/security', [
+        'find-certificate',
+        '-a',
+        '-p',
+        ...keychains,
+      ], runInShell: false);
       final pem = r.stdout is String ? r.stdout as String : '';
       final count = 'BEGIN CERTIFICATE'.allMatches(pem).length;
       if (r.exitCode != 0 || count == 0) {

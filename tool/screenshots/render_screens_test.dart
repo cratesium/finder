@@ -28,6 +28,11 @@ Future<void> loadFonts() async {
     roboto.addFont(Future.value(ByteData.sublistView(File('$root/$f').readAsBytesSync())));
   }
   await roboto.load();
+  final inter = FontLoader('Inter');
+  for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+    inter.addFont(Future.value(ByteData.sublistView(File('assets/fonts/Inter-$w.ttf').readAsBytesSync())));
+  }
+  await inter.load();
   final icons = FontLoader('MaterialIcons')
     ..addFont(Future.value(ByteData.sublistView(File('$root/MaterialIcons-Regular.otf').readAsBytesSync())));
   await icons.load();
@@ -58,8 +63,8 @@ void main() {
 
     final m = container.read(downloadManagerProvider)..maxConcurrent = 2;
     await tester.runAsync(() => m.enqueue([
-          request('a1', dir: '/tmp/cg-widget/Downloads', playlist: 'Flutter Desktop Course'),
-          request('b2', dir: '/tmp/cg-widget/Downloads', playlist: 'Flutter Desktop Course',
+          request('a1', dir: '/tmp/cg-widget/Downloads', playlist: 'Flutter Desktop Course', batch: 'pl'),
+          request('b2', dir: '/tmp/cg-widget/Downloads', playlist: 'Flutter Desktop Course', batch: 'pl',
               options: const DownloadOptions(destinationDir: '/tmp/cg-widget/Downloads', quality: VideoQuality.p1080)),
           request('c3', dir: '/tmp/cg-widget/Downloads'),
           request('d4', dir: '/tmp/cg-widget/Downloads'),
@@ -77,8 +82,9 @@ void main() {
     await tester.tap(find.text('Downloads').first);
     await snap(tester, '3-downloads');
 
-    await tester.tap(find.text('Queue').first);
+    await tester.tap(find.byKey(const Key('tab-queued')));
     await snap(tester, '4-queue');
+    await tester.tap(find.byKey(const Key('tab-all')));
 
     h.downloader.jobs[0].succeed('/tmp/x.mp4', res: 720);
     h.downloader.jobs[1].fail(AppError.of(AppErrorKind.network));
@@ -100,9 +106,13 @@ void main() {
         format: 'mp4',
         fileSize: 214958080,
         filePath: '/tmp/missing.mp4',
-        errorMessage: i == 1 ? 'finder was closed before this download finished.' : null,
+        errorMessage: i == 1 ? 'Finder was closed before this download finished.' : null,
       ));
     }
+    await tester.tap(find.text('Home').first);
+    await idle(tester);
+    await tester.tap(find.text('New link'));
+    await snap(tester, '1b-home-recent');
     await tester.tap(find.text('History').first);
     await snap(tester, '5-history');
 
@@ -114,8 +124,14 @@ void main() {
 
     tester.view.physicalSize = const ui.Size(900, 700);
     await idle(tester);
-    await tester.tap(find.byTooltip('Dashboard'));
-    await snap(tester, '8-dashboard-narrow');
+    await tester.tap(find.byTooltip('Home'));
+    await snap(tester, '8-home-narrow');
+
+    tester.view.physicalSize = const ui.Size(390, 844);
+    await idle(tester);
+    await snap(tester, '8b-home-phone');
+    await tester.tap(find.byType(NavigationDestination).at(1));
+    await snap(tester, '8c-downloads-phone');
 
     await tester.runAsync(m.shutdown);
     await idle(tester);
@@ -124,6 +140,19 @@ void main() {
   testWidgets('render light theme + missing deps', (tester) async {
     final h = Harness()..deps = missingSnapshot;
     await h.pump(tester, location: Routes.settings);
-    await snap(tester, '9-settings-missing');
+    await tester.tap(find.text('Light'));
+    await snap(tester, '9-settings-light');
+    await tester.tap(find.text('Home').first);
+    await snap(tester, '10-home-light');
+  });
+
+  testWidgets('render single video', (tester) async {
+    final h = Harness()..metadata = FakeMetadataService((_) => sampleVideo);
+    await h.pump(tester);
+    await tester.enterText(find.byKey(const Key('url-field')), 'https://www.youtube.com/watch?v=v');
+    await tester.tap(find.byKey(const Key('detect-button')));
+    await snap(tester, '11-single-video');
+    await tester.tap(find.text('About').first);
+    await snap(tester, '7-about');
   });
 }

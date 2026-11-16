@@ -27,16 +27,16 @@ void main() {
   ResolvedTools tools = const ResolvedTools(ytDlpPath: '/y', ffmpegPath: '/f');
 
   DownloadManager build({int max = 2, bool skip = true}) => DownloadManager(
-        downloader: downloader,
-        history: history,
-        notifications: notifications,
-        tools: () async => tools,
-        directoryCheck: (_) async => true,
-        fileSize: (_) async => 1234,
-        maxConcurrent: max,
-        skipCompleted: skip,
-        progressThrottle: Duration.zero,
-      );
+    downloader: downloader,
+    history: history,
+    notifications: notifications,
+    tools: () async => tools,
+    directoryCheck: (_) async => true,
+    fileSize: (_) async => 1234,
+    maxConcurrent: max,
+    skipCompleted: skip,
+    progressThrottle: Duration.zero,
+  );
 
   setUp(() async {
     downloader = FakeDownloader();
@@ -90,7 +90,11 @@ void main() {
     await m.enqueue([request('a', dir: '/one')]);
     final r = await m.enqueue([
       request('a', dir: '/two'),
-      request('a', dir: '/one', options: const DownloadOptions(destinationDir: '/one', mode: DownloadMode.audioOnly)),
+      request(
+        'a',
+        dir: '/one',
+        options: const DownloadOptions(destinationDir: '/one', mode: DownloadMode.audioOnly),
+      ),
     ]);
     expect(r.added, 2);
   });
@@ -98,18 +102,20 @@ void main() {
   test('skips videos already completed in history when the file exists', () async {
     final file = File('${tmp.path}/a.mp4')..writeAsStringSync('x');
     final req = request('a', dir: tmp.path);
-    await history.upsert(HistoryRecord(
-      dedupeKey: req.dedupeKey,
-      videoId: 'a',
-      extractor: 'Youtube',
-      title: 'A',
-      url: req.entry.url,
-      destinationDir: tmp.path,
-      status: HistoryStatus.completed,
-      createdAt: DateTime(2026),
-      options: req.options,
-      filePath: file.path,
-    ));
+    await history.upsert(
+      HistoryRecord(
+        dedupeKey: req.dedupeKey,
+        videoId: 'a',
+        extractor: 'Youtube',
+        title: 'A',
+        url: req.entry.url,
+        destinationDir: tmp.path,
+        status: HistoryStatus.completed,
+        createdAt: DateTime(2026),
+        options: req.options,
+        filePath: file.path,
+      ),
+    );
     final m = build();
     final r = await m.enqueue([req]);
     expect(r.skippedCompleted, 1);
@@ -140,7 +146,16 @@ void main() {
     await m.enqueue([request('a')]);
     await settle();
     final job = downloader.jobs.single;
-    job.emit(const ProgressEvent(status: 'downloading', downloadedBytes: 50, totalBytes: 100, speed: 10, eta: 5, formatId: '137'));
+    job.emit(
+      const ProgressEvent(
+        status: 'downloading',
+        downloadedBytes: 50,
+        totalBytes: 100,
+        speed: 10,
+        eta: 5,
+        formatId: '137',
+      ),
+    );
     await settle();
     var t = m.tasks.single;
     expect(t.status, TaskStatus.downloading);
@@ -163,7 +178,12 @@ void main() {
 
   test('completion records history, size, resolution and notifies', () async {
     final m = build();
-    await m.enqueue([request('a', options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p1080))]);
+    await m.enqueue([
+      request(
+        'a',
+        options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p1080),
+      ),
+    ]);
     await settle();
     downloader.jobs.single.succeed('/d/A [a].mp4', res: 1080);
     await settle();
@@ -187,7 +207,12 @@ void main() {
       fileSize: (_) async => 1,
       resolutionProbe: (ffmpeg, file) async => ffmpeg == '/f' ? 480 : null,
     );
-    await m.enqueue([request('a', options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p1080))]);
+    await m.enqueue([
+      request(
+        'a',
+        options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p1080),
+      ),
+    ]);
     await settle();
     downloader.jobs.single.succeed('/d/a.mp4');
     await settle();
@@ -197,7 +222,12 @@ void main() {
 
   test('communicates when the requested quality was unavailable', () async {
     final m = build();
-    await m.enqueue([request('a', options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p2160))]);
+    await m.enqueue([
+      request(
+        'a',
+        options: const DownloadOptions(destinationDir: '/d', quality: VideoQuality.p2160),
+      ),
+    ]);
     await settle();
     downloader.jobs.single.succeed('/d/a.mp4', res: 720);
     await settle();

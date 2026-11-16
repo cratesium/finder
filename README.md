@@ -1,16 +1,60 @@
-# finder
+# Finder
 
-A desktop download manager for videos and playlists **you own or are authorized
+A download manager for videos and playlists **you own or are authorized
 to access**. Built with Flutter from a single Dart codebase for **macOS (Apple
-Silicon and Intel)** and **Windows x64**. It drives
+Silicon and Intel)**, **Windows x64**, **Linux**, **Android (7.0+)** and
+**iOS** (YouTube links only). Version 3.0.0 ships yt-dlp and FFmpeg inside the
+app, so nothing has to be installed first. It drives
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) for extraction and downloading, and
 [FFmpeg](https://ffmpeg.org) for merging and audio extraction. Everything runs
 locally: there is no backend, telemetry or upload of any kind.
 
-> finder does not bypass DRM, paywalls, sign-in requirements or other access
+*Made by Cratesium.*
+
+> Finder does not bypass DRM, paywalls, sign-in requirements or other access
 > restrictions. Respect copyright and the terms of the platforms you use.
 
 ---
+
+## Quick start
+
+```bash
+flutter pub get          # install packages
+flutter run              # run on the current desktop / attached device
+flutter run -d macos     # or: -d windows, -d linux, -d <android-or-ios-device-id>
+flutter devices          # list available targets
+```
+
+Checks before committing:
+
+```bash
+flutter analyze                                           # lints, must report "No issues found"
+flutter test                                              # full test suite
+flutter test tool/screenshots/render_screens_test.dart    # render every screen → build/screenshots/
+```
+
+## Design
+
+The UI uses an "aurora" style, drawn entirely in code (no image assets
+besides the app icon):
+
+- **Backdrop**: deep indigo/violet gradient with soft diagonal light beams
+  (`widgets/backdrop.dart`). Light mode uses a pale lavender variant.
+- **White floating cards** (`AppCard`, 28 px radius) hold grouped content in
+  both modes. Content inside a card is themed with `AppPalette.card`; widgets
+  that style card content directly build it through `CardScope`.
+- **Frosted-glass controls** (`GlassSurface`) for anything placed on the
+  backdrop: header pills, round quick actions, inputs, tabs. Buttons are pills.
+- **Home**: glass bell + brand pill, total downloaded as a large figure, round
+  quick actions (Paste, Active, History, Folder/Settings), a **Library** card
+  with month chips and an extruded 3D donut chart of downloads by quality, and
+  a **Recent downloads** card.
+- **Phone navigation**: floating white bottom bar; the selected tab sits on an
+  iridescent orb.
+
+Design tokens live in `core/theme/app_palette.dart` (`dark`, `light`, `card`
+palettes and `chartColors`); Material component styling is in
+`core/theme/app_theme.dart`.
 
 ## Features
 
@@ -20,10 +64,11 @@ locally: there is no backend, telemetry or upload of any kind.
 | **Metadata** | `yt-dlp --dump-single-json --flat-playlist`, parsed off the UI isolate. Handles single videos, playlists, and partially unavailable playlists (private, deleted, members-only, live, nested playlists are flagged and can't be selected). |
 | **Quality** | Best, 2160p, 1440p, 1080p, 720p, 480p, 360p. For a single video, **only resolutions that actually exist** can be picked. For playlists, each video gets the best stream at or below your choice, and you're told when a video didn't have it (the resolution is checked against the finished file). |
 | **Formats** | MP4, MKV, or original container. Streams are merged/remuxed **without re-encoding**. Audio-only: best original audio (no re-encode) or MP3 (re-encoded, 320/192/128 kbps or VBR V0). |
-| **Download manager** | Queue with configurable concurrency (1–6), per-item progress, speed, size, ETA, stream index, queue position, reorder, pause/resume, cancel (removes partial files), retry, skip already-completed items, duplicate prevention. All numbers come from yt-dlp's real output; nothing is estimated by finder. |
+| **Download manager** | Queue with configurable concurrency (1–6), per-item progress, speed, size, ETA, stream index, queue position, reorder, pause/resume, cancel (removes partial files), retry, skip already-completed items, duplicate prevention. All numbers come from yt-dlp's real output; nothing is estimated by Finder. |
 | **History** | SQLite-backed. Search, filter by status and date (today / 7 / 30 days / custom range), open file, show in folder, retry, remove records, detection of moved/deleted files. Downloads interrupted by quitting are marked *Interrupted* on next launch. |
+| **Home** | Total downloaded, quick actions, monthly Library chart by quality (4K, 1440p, 1080p, 720p, SD, Audio), recent downloads. |
 | **Settings** | Default folder, resolution, container, audio format/quality, concurrency, playlist numbering, skip completed, custom executable paths, theme (dark/light/system), logging level, notifications, system certificates. |
-| **Dependencies** | Detects yt-dlp and FFmpeg (custom path → app-managed → bundled → PATH → well-known locations), validates them, shows versions, and installs or updates verified official builds in one click. |
+| **Dependencies** | Uses the yt-dlp and FFmpeg built into the app (custom path → in-app update → bundled); tools installed on the computer are never used. Validates them, shows versions, and updates yt-dlp to a verified official build in one click. On macOS a quarantined copy of the engine is repaired automatically. |
 | **Reliability** | Typed errors with plain-language messages, rotating and sanitized local logs, safe child-process cleanup on quit. |
 
 ## Architecture
@@ -97,6 +142,9 @@ logging, crypto, intl, flutter_local_notifications.
 | --- | --- |
 | macOS | 10.15+ on Apple Silicon (arm64) or Intel (x64) |
 | Windows | Windows 10 1803+ / Windows 11, x64 (arm64 runs the x64 build) |
+| Linux | x64 or arm64 with GTK 3 |
+| Android | 7.0+ |
+| iOS | YouTube links only (built-in engine; iOS can't run yt-dlp/FFmpeg) |
 | Build tools | Flutter 3.47+ (Dart 3.13+). macOS builds need **full Xcode**. Windows builds need **Visual Studio 2022 with "Desktop development with C++"**. |
 
 ## Building
@@ -106,33 +154,57 @@ flutter pub get
 flutter analyze
 flutter test
 
-# macOS (on a Mac with Xcode)
-flutter build macos --release        # → build/macos/Build/Products/Release/finder.app
-tool/package_macos.sh                # same, plus bundled deps + inside-out codesign
+# macOS (on a Mac with full Xcode)
+flutter build macos --release        # → build/macos/Build/Products/Release/Finder.app
+tool/package_macos.sh                # + bundled deps, codesign → build/release/Finder-<version>-macos.{dmg,zip}
 
 # Windows (on Windows with Visual Studio 2022)
 flutter build windows --release      # → build\windows\x64\runner\Release\
+tool\package_windows.ps1             # installer → build\release\Finder-<version>-windows-x64-setup.exe
+
+# Linux (on Linux; see the header of tool/package_linux.sh for apt packages)
+flutter build linux --release        # → build/linux/<arch>/release/bundle/
+tool/package_linux.sh                # → build/release/Finder-<version>-linux-<arch>.{AppImage,deb,rpm}
+
+# Android (Android SDK + JDK 17; yt-dlp, Python and FFmpeg are embedded via youtubedl-android)
+flutter build apk --release          # → build/app/outputs/flutter-apk/app-release.apk
+
+# iOS (on a Mac with Xcode)
+flutter build ios --release
 ```
+
+Everything is named **Finder**: window titles, the macOS `Finder.app`, the
+`finder` executables, installers and packages (`Finder-<version>-…`), and the
+data and log files (`finder.db`, `finder.log`). The store identifiers stay
+`com.cratesium.app` so existing installs update in place, and history from
+Cratesium 3.0 is migrated automatically on first launch.
+
+Android release builds use `android/key.properties` (storeFile, storePassword,
+keyAlias, keyPassword) when present, otherwise the debug key (fine for sideloading).
 
 Windows builds must be produced and tested on Windows, and macOS builds on macOS.
 
-### Bundling dependencies (optional)
+### Bundling dependencies
 
-End users can install yt-dlp from **Settings → Dependencies** with one click, so
-bundling is optional. To ship a self-contained package instead:
+Release packages bundle yt-dlp and FFmpeg so the app works without anything
+installed on the system (Android always embeds them). Settings → Dependencies
+can still update yt-dlp or point at your own copies.
 
 ```bash
+# Linux: verified yt-dlp + FFmpeg
+dart run tool/fetch_dependencies.dart --platform linux     # → third_party/linux/bin
+
 # Windows: verified yt-dlp (onedir) + FFmpeg (yt-dlp/FFmpeg-Builds, GPL)
 dart run tool/fetch_dependencies.dart --platform windows   # → third_party/windows/bin
 flutter build windows --release                            # CMake copies it to <install>\bin
 
 # macOS: verified yt-dlp; bring an FFmpeg build you trust
 dart run tool/fetch_dependencies.dart --platform macos --ffmpeg /path/to/ffmpeg
-tool/package_macos.sh                                       # → finder.app/Contents/Resources/bin
+tool/package_macos.sh                                       # → Finder.app/Contents/Resources/bin
 ```
 
-At runtime finder looks in `finder.app/Contents/Resources/bin` (macOS)
-and `<install dir>\bin` (Windows).
+At runtime Finder looks in `Finder.app/Contents/Resources/bin` (macOS),
+`<install dir>\bin` (Windows) and `<bundle>/bin` (Linux).
 
 ## Dependency configuration
 
@@ -140,7 +212,7 @@ and `<install dir>\bin` (Windows).
 | --- | --- | --- | --- |
 | yt-dlp | macOS + Windows | Official GitHub release, *onedir* build (`yt-dlp_macos.zip`, `yt-dlp_win.zip`) | SHA-256 against the release's `SHA2-256SUMS` |
 | FFmpeg | Windows | `yt-dlp/FFmpeg-Builds` (`ffmpeg-master-latest-win64-gpl.zip`) | SHA-256 against `checksums.sha256` |
-| FFmpeg | macOS: manual | FFmpeg publishes source only. Use a build linked from ffmpeg.org, or an existing install (`/opt/homebrew/bin`, `/usr/local/bin`, `/opt/local/bin` are detected automatically; Homebrew is **not** required). | Validated by running `-version` |
+| FFmpeg | macOS: manual | FFmpeg publishes source only. The signed, notarized static build is bundled at build time by `tool/fetch_dependencies.dart`; nothing is looked up on the system. | Validated by running `-version` |
 
 - Binaries are only made executable after their checksum matches. An asset
   without a published checksum is refused.
@@ -156,11 +228,11 @@ and `<install dir>\bin` (Windows).
   expected file name (`yt-dlp*`, `ffmpeg*`), executable bit or `.exe`, and a
   successful version probe. A configured custom path is never silently
   replaced.
-- **Update**: yt-dlp installed by finder can be updated in place. Copies
+- **Update**: yt-dlp installed by Finder can be updated in place. Copies
   installed some other way should be updated by whatever installed them.
 - Managed binaries live in the app data folder: `~/Library/Application
-  Support/com.finder.finder/bin` on macOS and
-  `%APPDATA%\finder\finder\bin` on Windows.
+  Support/com.finder.app/bin` on macOS and
+  `%APPDATA%\Finder\Finder\bin` on Windows.
 
 ## Troubleshooting
 
@@ -171,7 +243,7 @@ and `<install dir>\bin` (Windows).
 | *Secure connection failed* / `CERTIFICATE_VERIFY_FAILED` | Your network inspects HTTPS (common on managed work computers). Keep **Settings → Network → Use system certificates** enabled: yt-dlp then trusts the OS store (macOS Keychain roots exported to a PEM file; the Windows certificate store). Verification is never turned off. |
 | First check after installing yt-dlp is slow | Expected once (about 30 s) while the OS scans the new binary. |
 | *Format unavailable* | The video doesn't offer that format. Choose *Best available* or another container. For YouTube, newer yt-dlp versions may need an external JavaScript runtime to list all formats. See the yt-dlp docs. |
-| *Access restricted* | The content is private, members-only or needs sign-in. finder won't bypass that. |
+| *Access restricted* | The content is private, members-only or needs sign-in. Finder won't bypass that. |
 | *Permission denied* | Choose a destination folder you can write to. |
 | Anything else | Settings → Diagnostics → **Open logs folder**. Logs redact your home path and credential-like URL parameters. |
 
@@ -204,13 +276,17 @@ and `<install dir>\bin` (Windows).
 | Command | Purpose |
 | --- | --- |
 | `flutter test` | Unit, widget, persistence, and mock-executable integration tests |
-| `dart run tool/smoke_test.dart <dir> [url]` | Real end-to-end check: installs verified yt-dlp, extracts metadata, downloads with finder's exact arguments (`SMOKE_REAL_ARGS=1` to skip the no-FFmpeg fallback) |
+| `flutter analyze` | Static analysis and lints |
+| `dart format -l 120 lib test` | Format code (120-column lines) |
+| `dart run tool/smoke_test.dart <dir> [url]` | Real end-to-end check: installs verified yt-dlp, extracts metadata, downloads with Finder's exact arguments (`SMOKE_REAL_ARGS=1` to skip the no-FFmpeg fallback) |
 | `flutter test tool/screenshots/render_screens_test.dart` | Renders every screen to `build/screenshots/*.png` with real fonts |
+| `dart run tool/ios_smoke_test.dart [videoUrl] [playlistUrl]` | Real-network check of the iOS download engine, run on the host |
 | `python3 tool/generate_icons.py` | Regenerates the macOS and Windows app icons |
+| `python3 tool/generate_android_icons.py` | Regenerates the Android launcher icons |
 
 ## License notes
 
 yt-dlp is released under the Unlicense. FFmpeg is LGPL/GPL depending on the
-build (the Windows builds finder installs are GPL, and their license file is
+build (the Windows builds Finder installs are GPL, and their license file is
 saved next to the binaries). See **About → View all open-source licenses** for
 the Dart/Flutter packages.
