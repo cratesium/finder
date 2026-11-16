@@ -46,8 +46,18 @@ object Toolchain {
         }
     }
 
+    /** Blocks until the embedded Python / yt-dlp / FFmpeg runtime is unpacked. */
+    fun ensureReady() {
+        val f = ready ?: error("Toolchain was not initialized")
+        // First launch after install can take a while on slower devices.
+        if (!f.get(5, TimeUnit.MINUTES)) {
+            throw IllegalStateException("The built-in download engine took too long to start.")
+        }
+        // initExecutor surfaces failures through the Future; get() rethrows them.
+    }
+
     private fun awaitReady() {
-        ready!!.get()
+        ensureReady()
     }
 
     fun emit(event: Map<String, Any?>) = main.post { listener?.invoke(event) }

@@ -240,30 +240,53 @@ class DependencyManager {
       source: DependencySource.bundled,
       message: why,
     );
-    try {
-      final String? version;
-      if (kind == DependencyKind.ytDlp) {
-        final r = await _processes.run(AndroidBundled.ytDlpPath, const [
-          '--ignore-config',
-          '--version',
-        ], timeout: AppConfig.firstLaunchProbeTimeout);
-        if (!r.ok) return failed('The embedded yt-dlp failed to start (exit ${r.exitCode}).');
-        version = _ytDlpVersion.firstMatch(r.stdout.trim())?.group(0);
-      } else {
-        final out = await android!.ffmpegVersion();
-        version = out == null ? null : FfmpegService.parseVersion(out);
+  Future<DependencyStatus> probe() async {
+      try {
+        await android!.ensureReady();
+      } catch (e) {
+        return failed('The built-in engine isn\'t ready yet: $e');
       }
-      return DependencyStatus(
-        kind: kind,
-        state: DependencyState.ready,
-        path: kind == DependencyKind.ytDlp ? AndroidBundled.ytDlpPath : AndroidBundled.ffmpegPath,
-        version: version ?? 'bundled',
-        source: DependencySource.bundled,
-      );
-    } catch (e) {
-      _log.warning('embedded ${kind.label} unavailable', e);
-      return failed('The embedded ${kind.label} could not be started.');
+      try {
+        final String? version;
+        if (kind == DependencyKind.ytDlp) {
+          final r = await _processes.run(AndroidBundled.ytDlpPath, const [
+            '--ignore-config',
+            '--version',
+          ], timeout: AppConfig.firstLaunchProbeTimeout);
+          final combined = '${r.stdout}\n${r.stderr}'.trim();
+          version = _ytDlpVersion.firstMatch(combined)?.group(0);
+          if (!r.ok && version == null) {
+            return failed(
+              r.timedOut
+                  ? 'The embedded yt-dlp did not respond in time (first launch can take a minute).'
+                  : 'The embedded yt-dlp failed to start (exit ${r.exitCode}).',
+            );
+          }
+        } else {
+          final out = await android!.ffmpegVersion();
+          version = out == null || out.trim().isEmpty ? null : FfmpegService.parseVersion(out);
+        }
+        return DependencyStatus(
+          kind: kind,
+          state: DependencyState.ready,
+          path: kind == DependencyKind.ytDlp ? AndroidBundled.ytDlpPath : AndroidBundled.ffmpegPath,
+          version: version ?? 'bundled',
+          source: DependencySource.bundled,
+        );
+      } catch (e) {
+        _log.warning('embedded ${kind.label} unavailable', e);
+        return failed('The embedded ${kind.label} could not be started.');
+      }
     }
+
+    const delays = [Duration.zero, Duration(seconds: 2), Duration(seconds: 5)];
+    DependencyStatus? last;
+    for (final delay in delays) {
+      if (delay > Duration.zero) await Future<void>.delayed(delay);
+      last = await probe();
+      if (last.isReady) return last;
+    }
+    return last!;
   }
 
   /// Verifies that [path] is a real, runnable [kind] executable.

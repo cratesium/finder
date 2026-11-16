@@ -26,7 +26,6 @@ class SettingsScreen extends ConsumerWidget {
     final s = ref.watch(settingsProvider);
     final ctrl = ref.read(settingsProvider.notifier);
     final platform = ref.read(platformInfoProvider);
-    final isAndroid = platform.isAndroid;
     // Phones and tablets save to a fixed, OS-appropriate location.
     final isDesktop = platform.isDesktop;
 
@@ -208,13 +207,11 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: Gap.xl),
-          if (isDesktop || isAndroid) ...[
+          if (isDesktop) ...[
             Text('Built-in engine', style: context.text.titleMedium),
             const SizedBox(height: 2),
             Text(
-              isAndroid
-                  ? 'Included with Finder — nothing to install. yt-dlp can be updated in place when sites change.'
-                  : 'Included with Finder — nothing to install. Advanced: custom paths are validated before use.',
+              'Included with Finder — nothing to install. Advanced: custom paths are validated before use.',
               style: context.text.bodySmall,
             ),
             const SizedBox(height: Gap.md),

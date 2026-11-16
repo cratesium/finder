@@ -4,7 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show PlatformException, rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 
@@ -35,6 +35,20 @@ Future<void> main() async {
       final toolchain = AndroidToolchain();
       await toolchain.ensureStoragePermission();
       androidDownloads = await toolchain.downloadsDirectory();
+      try {
+        await toolchain.ensureReady();
+      } on PlatformException catch (e) {
+        runApp(
+          StartupErrorApp(
+            message:
+                'Finder couldn\'t prepare the built-in download engine.\n\n'
+                '${e.message ?? e.code}\n\n'
+                'Try freeing storage, reinstalling the app, or using a device with '
+                'arm64-v8a / armeabi-v7a (32-bit x86 emulators are not supported).',
+          ),
+        );
+        return;
+      }
     }
     paths = await AppPaths.resolve(downloadFolder: androidDownloads);
   } catch (e) {

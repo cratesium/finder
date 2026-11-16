@@ -43,6 +43,10 @@ class AndroidToolchain {
 
   Future<void> stop(int id) => _method.invokeMethod<void>('stop', {'id': id});
 
+  /// Waits until the yt-dlp / FFmpeg payloads unpacked from the APK are ready.
+  /// Call during startup (first launch can take several seconds).
+  Future<void> ensureReady() => _method.invokeMethod<void>('ensureReady');
+
   Future<String?> ffmpegVersion() => _method.invokeMethod<String>('ffmpegVersion');
 
   /// Updates the embedded yt-dlp to the latest stable release.

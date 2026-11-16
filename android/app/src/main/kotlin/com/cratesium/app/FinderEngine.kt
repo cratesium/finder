@@ -93,6 +93,10 @@ object FinderEngine {
                 Toolchain.stop(call.argument<Int>("id")!!)
                 result.success(null)
             }
+            "ensureReady" -> background(result) {
+                Toolchain.ensureReady()
+                "ready"
+            }
             "ffmpegVersion" -> background(result) { Toolchain.ffmpegVersion() }
             "updateYtDlp" -> background(result) { Toolchain.updateYtDlp() }
             "downloadsDirectory" -> {
