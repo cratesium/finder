@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show PlatformException, rootBundle;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 
@@ -17,7 +16,6 @@ import 'core/logging/app_logger.dart';
 import 'core/theme/app_theme.dart';
 import 'features/history/data/history_repository.dart';
 import 'features/settings/data/settings_repository.dart';
-import 'services/android/android_toolchain.dart';
 import 'services/storage_service.dart';
 
 final _log = Logger('main');
@@ -30,27 +28,7 @@ Future<void> main() async {
 
   AppPaths paths;
   try {
-    String? androidDownloads;
-    if (Platform.isAndroid) {
-      final toolchain = AndroidToolchain();
-      await toolchain.ensureStoragePermission();
-      androidDownloads = await toolchain.downloadsDirectory();
-      try {
-        await toolchain.ensureReady();
-      } on PlatformException catch (e) {
-        runApp(
-          StartupErrorApp(
-            message:
-                'Finder couldn\'t prepare the built-in download engine.\n\n'
-                '${e.message ?? e.code}\n\n'
-                'Try freeing storage, reinstalling the app, or using a device with '
-                'arm64-v8a / armeabi-v7a (32-bit x86 emulators are not supported).',
-          ),
-        );
-        return;
-      }
-    }
-    paths = await AppPaths.resolve(downloadFolder: androidDownloads);
+    paths = await AppPaths.resolve();
   } catch (e) {
     runApp(StartupErrorApp(message: 'Finder couldn\'t access its application data folder.\n\n$e'));
     return;

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 
 import '../core/errors/app_error.dart';
-import 'android/android_toolchain.dart';
 
 final _log = Logger('opener');
 
@@ -66,34 +65,4 @@ class SystemFileOpener implements FileOpenerService {
     if (Platform.isWindows) return _run('explorer.exe', [path]);
     return _run('xdg-open', [path]);
   }
-}
-
-/// Opens files with an Android `ACTION_VIEW` intent (via a FileProvider).
-class AndroidFileOpener implements FileOpenerService {
-  const AndroidFileOpener(this._toolchain);
-  final AndroidToolchain _toolchain;
-
-  Future<void> _guard(Future<void> Function() op) async {
-    try {
-      await op();
-    } catch (e) {
-      _log.warning('android open failed', e);
-      throw AppError(AppErrorKind.unknown, 'No app on this device can open that item.', detail: '$e');
-    }
-  }
-
-  @override
-  Future<void> openFile(String path) async {
-    if (!await File(path).exists()) {
-      throw const AppError(AppErrorKind.unavailable, 'That file no longer exists. It may have been moved or deleted.');
-    }
-    await _guard(() => _toolchain.openFile(path));
-  }
-
-  // Android has no "reveal in folder"; opening the file is the closest match.
-  @override
-  Future<void> revealInFolder(String path) => openFile(path);
-
-  @override
-  Future<void> openFolder(String path) => _guard(() => _toolchain.openFolder(path));
 }

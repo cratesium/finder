@@ -5,7 +5,6 @@ import '../../../core/di/providers.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/utils/path_utils.dart';
 import '../../../models/dependency_status.dart';
-import '../../../services/android/android_toolchain.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/feedback.dart';
 import '../../../widgets/status_chip.dart';
@@ -73,7 +72,6 @@ class DependencyCard extends ConsumerWidget {
               };
 
         final ready = status?.isReady == true;
-        final isAndroid = ref.read(platformInfoProvider).isAndroid;
         // yt-dlp can be updated in place (sites change often); FFmpeg is only
         // offered for download when the built-in copy is missing.
         final canInstall = manager.canInstall(kind) && (kind == DependencyKind.ytDlp || !ready);
@@ -124,11 +122,7 @@ class DependencyCard extends ConsumerWidget {
                 _kv(
                   context,
                   'Path',
-                  status.path == null
-                      ? '—'
-                      : AndroidBundled.isBundled(status.path)
-                      ? 'Embedded in the app'
-                      : PathUtils.displayPath(status.path!),
+                  status.path == null ? '—' : PathUtils.displayPath(status.path!),
                   selectable: true,
                 ),
                 if (status.message != null)
@@ -170,12 +164,11 @@ class DependencyCard extends ConsumerWidget {
                       ),
                       label: Text(installLabel),
                     ),
-                  if (!isAndroid)
-                    OutlinedButton.icon(
-                      onPressed: installing ? null : () => _choose(context, ref),
-                      icon: const Icon(Icons.folder_open_outlined, size: 16),
-                      label: const Text('Choose file…'),
-                    ),
+                  OutlinedButton.icon(
+                    onPressed: installing ? null : () => _choose(context, ref),
+                    icon: const Icon(Icons.folder_open_outlined, size: 16),
+                    label: const Text('Choose file…'),
+                  ),
                   if (hasCustom)
                     TextButton(onPressed: () => _resetToAuto(ref), child: const Text('Use automatic detection')),
                   TextButton(

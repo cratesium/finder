@@ -6,10 +6,6 @@
 #   macOS:   MACOS_CERTIFICATE_P12 (base64), MACOS_CERTIFICATE_PASSWORD,
 #            MACOS_CODESIGN_IDENTITY ("Developer ID Application: …"),
 #            APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD (notarization)
-#   Android: ANDROID_KEYSTORE (base64 .jks), ANDROID_KEYSTORE_PASSWORD,
-#            ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
-#   iOS:     IOS_CERTIFICATE_P12 (base64), IOS_CERTIFICATE_PASSWORD,
-#            IOS_PROVISIONING_PROFILE (base64), IOS_EXPORT_OPTIONS_PLIST (base64)
 name: release
 
 on:
@@ -117,103 +113,9 @@ jobs:
           name: linux
           path: build/release/*linux*
 
-  android:
-    needs: test
-    runs-on: ubuntu-latest
-    env:
-      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE != '' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - name: Release signing
-        if: env.HAS_KEYSTORE == 'true'
-        env:
-          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          echo "$KEYSTORE" | base64 --decode > android/app/release.jks
-          cat > android/key.properties <<PROPS
-          storeFile=release.jks
-          storePassword=$STORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          PROPS
-      - run: flutter pub get
-      - run: flutter build apk --release
-      - run: flutter build appbundle --release
-      - name: Collect
-        run: |
-          VERSION=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
-          mkdir -p build/release
-          cp build/app/outputs/flutter-apk/app-release.apk "build/release/Finder-$VERSION-android.apk"
-          cp build/app/outputs/bundle/release/app-release.aab "build/release/Finder-$VERSION-android.aab"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android
-          path: build/release/*android*
-
-  ios:
-    needs: test
-    runs-on: macos-latest
-    env:
-      HAS_CERT: ${{ secrets.IOS_CERTIFICATE_P12 != '' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - run: flutter pub get
-      - name: Unsigned build (for re-signing / verification)
-        if: env.HAS_CERT != 'true'
-        run: |
-          VERSION=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
-          flutter build ios --release --no-codesign
-          mkdir -p build/release build/ipa/Payload
-          cp -R build/ios/iphoneos/Runner.app build/ipa/Payload/
-          (cd build/ipa && zip -qry "../release/Finder-$VERSION-ios-unsigned.ipa" Payload)
-      - name: Signed IPA
-        if: env.HAS_CERT == 'true'
-        env:
-          CERT: ${{ secrets.IOS_CERTIFICATE_P12 }}
-          CERT_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-          PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
-          EXPORT_OPTIONS: ${{ secrets.IOS_EXPORT_OPTIONS_PLIST }}
-        run: |
-          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
-          echo "$CERT" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security create-keychain -p ci "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p ci "$KEYCHAIN"
-          security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
-          security set-key-partition-list -S apple-tool:,apple: -k ci "$KEYCHAIN"
-          security list-keychains -d user -s "$KEYCHAIN" login.keychain
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/finder.mobileprovision
-          echo "$EXPORT_OPTIONS" | base64 --decode > "$RUNNER_TEMP/ExportOptions.plist"
-          VERSION=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
-          flutter build ipa --release --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
-          mkdir -p build/release
-          cp build/ios/ipa/*.ipa "build/release/Finder-$VERSION-ios.ipa"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios
-          path: build/release/*ios*
-
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [macos, windows, linux, android, ios]
+    needs: [macos, windows, linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

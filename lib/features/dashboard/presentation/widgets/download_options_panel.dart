@@ -159,8 +159,6 @@ class DownloadOptionsPanel extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    // Android saves to the public Download/Finder folder; iOS to
-                    // the app's Documents (visible in the Files app).
                     if (ref.read(platformInfoProvider).isDesktop)
                       TextButton(onPressed: () => _pickFolder(context, ref, o), child: const Text('Change')),
                   ],

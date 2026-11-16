@@ -14,8 +14,6 @@ analyzer:
     - build/**
     - windows/**
     - macos/**
-    - android/**
-    - ios/**
     - linux/**
 
 linter:

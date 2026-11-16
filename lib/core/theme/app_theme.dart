@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 import 'app_palette.dart';
@@ -47,12 +46,12 @@ abstract final class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       fontFamily: fontFamily,
-      // Dense on desktop, comfortable touch targets on phones and tablets.
       visualDensity: VisualDensity.adaptivePlatformDensity,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
         },
       ),
     );

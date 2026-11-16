@@ -12,9 +12,6 @@
 //   windows: yt-dlp/yt-dlp.exe (+ _internal), ffmpeg.exe, ffprobe.exe, FFMPEG-LICENSE.txt
 //   linux:   yt-dlp_linux/yt-dlp_linux[_aarch64] (+ _internal), ffmpeg, ffprobe, FFMPEG-LICENSE.txt
 //            (needs `unzip` or `bsdtar`, and `tar` with xz support)
-//
-// Android doesn't use this: yt-dlp (with Python) and FFmpeg come from the
-// youtubedl-android libraries declared in android/app/build.gradle.kts.
 import 'dart:io';
 
 import 'package:finder/core/config/app_config.dart';

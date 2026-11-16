@@ -2,8 +2,7 @@
 
 A download manager for videos and playlists **you own or are authorized
 to access**. Built with Flutter from a single Dart codebase for **macOS (Apple
-Silicon and Intel)**, **Windows x64**, **Linux**, **Android (7.0+)** and
-**iOS** (YouTube links only). Version 3.0.0 ships yt-dlp and FFmpeg inside the
+Silicon and Intel)**, **Windows x64**, and **Linux**. Version 3.0.0 ships yt-dlp and FFmpeg inside the
 app, so nothing has to be installed first. It drives
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) for extraction and downloading, and
 [FFmpeg](https://ffmpeg.org) for merging and audio extraction. Everything runs
@@ -21,7 +20,7 @@ locally: there is no backend, telemetry or upload of any kind.
 ```bash
 flutter pub get          # install packages
 flutter run              # run on the current desktop / attached device
-flutter run -d macos     # or: -d windows, -d linux, -d <android-or-ios-device-id>
+flutter run -d macos     # or: -d windows, -d linux
 flutter devices          # list available targets
 ```
 
@@ -143,8 +142,6 @@ logging, crypto, intl, flutter_local_notifications.
 | macOS | 10.15+ on Apple Silicon (arm64) or Intel (x64) |
 | Windows | Windows 10 1803+ / Windows 11, x64 (arm64 runs the x64 build) |
 | Linux | x64 or arm64 with GTK 3 |
-| Android | 7.0+ |
-| iOS | YouTube links only (built-in engine; iOS can't run yt-dlp/FFmpeg) |
 | Build tools | Flutter 3.47+ (Dart 3.13+). macOS builds need **full Xcode**. Windows builds need **Visual Studio 2022 with "Desktop development with C++"**. |
 
 ## Building
@@ -165,12 +162,6 @@ tool\package_windows.ps1             # installer → build\release\Finder-<versi
 # Linux (on Linux; see the header of tool/package_linux.sh for apt packages)
 flutter build linux --release        # → build/linux/<arch>/release/bundle/
 tool/package_linux.sh                # → build/release/Finder-<version>-linux-<arch>.{AppImage,deb,rpm}
-
-# Android (Android SDK + JDK 17; yt-dlp, Python and FFmpeg are embedded via youtubedl-android)
-flutter build apk --release          # → build/app/outputs/flutter-apk/app-release.apk
-
-# iOS (on a Mac with Xcode)
-flutter build ios --release
 ```
 
 Everything is named **Finder**: window titles, the macOS `Finder.app`, the
@@ -179,15 +170,12 @@ data and log files (`finder.db`, `finder.log`). The store identifiers stay
 `com.cratesium.app` so existing installs update in place, and history from
 Cratesium 3.0 is migrated automatically on first launch.
 
-Android release builds use `android/key.properties` (storeFile, storePassword,
-keyAlias, keyPassword) when present, otherwise the debug key (fine for sideloading).
-
 Windows builds must be produced and tested on Windows, and macOS builds on macOS.
 
 ### Bundling dependencies
 
 Release packages bundle yt-dlp and FFmpeg so the app works without anything
-installed on the system (Android always embeds them). Settings → Dependencies
+installed on the system. Settings → Dependencies
 can still update yt-dlp or point at your own copies.
 
 ```bash
@@ -280,9 +268,7 @@ At runtime Finder looks in `Finder.app/Contents/Resources/bin` (macOS),
 | `dart format -l 120 lib test` | Format code (120-column lines) |
 | `dart run tool/smoke_test.dart <dir> [url]` | Real end-to-end check: installs verified yt-dlp, extracts metadata, downloads with Finder's exact arguments (`SMOKE_REAL_ARGS=1` to skip the no-FFmpeg fallback) |
 | `flutter test tool/screenshots/render_screens_test.dart` | Renders every screen to `build/screenshots/*.png` with real fonts |
-| `dart run tool/ios_smoke_test.dart [videoUrl] [playlistUrl]` | Real-network check of the iOS download engine, run on the host |
 | `python3 tool/generate_icons.py` | Regenerates the macOS and Windows app icons |
-| `python3 tool/generate_android_icons.py` | Regenerates the Android launcher icons |
 
 ## License notes
 

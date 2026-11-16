@@ -7,7 +7,6 @@ import 'package:path/path.dart' as p;
 import '../core/errors/app_error.dart';
 import '../core/errors/error_classifier.dart';
 import '../models/download_options.dart';
-import 'android/android_toolchain.dart';
 import 'process_service.dart';
 import 'trust_store_service.dart';
 import 'ytdlp/ytdlp_args.dart';
@@ -85,8 +84,7 @@ class YtDlpDownloaderService implements DownloaderService {
       options: spec.options,
       directory: spec.directory,
       outputTemplate: spec.outputTemplate,
-      // The embedded Android toolchain sets FFmpeg's location itself.
-      ffmpegLocation: AndroidBundled.isBundled(spec.ffmpegPath) ? null : spec.ffmpegPath,
+      ffmpegLocation: spec.ffmpegPath,
       network: spec.network.arguments,
     );
     final ManagedProcess proc;

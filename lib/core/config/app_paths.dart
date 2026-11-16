@@ -22,9 +22,7 @@ class AppPaths {
   final String databasePath;
   final String defaultDownloadDir;
 
-  /// [downloadFolder] overrides the default download folder (Android passes
-  /// the public `Download/Finder` folder, since path_provider only exposes an
-  /// app-private one there).
+  /// [downloadFolder] overrides the default download folder when set.
   static Future<AppPaths> resolve({String? downloadFolder}) async {
     final support = await getApplicationSupportDirectory();
     final data = support.path;
@@ -32,9 +30,7 @@ class AppPaths {
 
     String downloads;
     try {
-      // iOS: Documents is what the Files app shows under
-      // "On My iPhone/iPad → Finder" (UIFileSharingEnabled).
-      final d = Platform.isIOS ? await getApplicationDocumentsDirectory() : await getDownloadsDirectory();
+      final d = await getDownloadsDirectory();
       downloads = d?.path ?? _homeDownloads();
     } catch (_) {
       downloads = _homeDownloads();
@@ -62,7 +58,7 @@ class AppPaths {
       p.join(data, 'cratesium.db'),
       // Windows (Cratesium 3.0): %APPDATA%\Cratesium\Cratesium
       p.join(grandParent, 'Cratesium', 'Cratesium', 'cratesium.db'),
-      // macOS / iOS: ~/Library/Application Support/<bundle id>
+      // macOS: ~/Library/Application Support/<bundle id>
       p.join(parent, 'com.finder.app', 'finder.db'),
       p.join(parent, 'com.coursegrab.coursegrab', 'coursegrab.db'),
       // Windows: %APPDATA%\<company>\<product>

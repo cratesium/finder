@@ -18,7 +18,6 @@ final _log = Logger('metadata');
 
 /// Extracts video/playlist metadata without downloading media.
 abstract interface class MetadataService {
-  /// [ytDlpPath] is ignored by engines that don't run yt-dlp (iOS).
   Future<MediaInfo> fetch(
     String url, {
     required String ytDlpPath,

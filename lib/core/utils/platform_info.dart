@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-enum HostOs { macos, windows, linux, android, ios, other }
+enum HostOs { macos, windows, linux, other }
 
 enum HostArch { arm64, x64, other }
 
@@ -21,17 +21,13 @@ class PlatformInfo {
         ? HostOs.macos
         : Platform.isWindows
         ? HostOs.windows
-        : Platform.isAndroid
-        ? HostOs.android
         : Platform.isLinux
         ? HostOs.linux
-        : Platform.isIOS
-        ? HostOs.ios
         : HostOs.other;
     final abi = Abi.current();
     final arch = switch (abi) {
-      Abi.macosArm64 || Abi.windowsArm64 || Abi.linuxArm64 || Abi.androidArm64 || Abi.iosArm64 => HostArch.arm64,
-      Abi.macosX64 || Abi.windowsX64 || Abi.linuxX64 || Abi.androidX64 || Abi.iosX64 => HostArch.x64,
+      Abi.macosArm64 || Abi.windowsArm64 || Abi.linuxArm64 => HostArch.arm64,
+      Abi.macosX64 || Abi.windowsX64 || Abi.linuxX64 => HostArch.x64,
       _ => HostArch.other,
     };
     return PlatformInfo(
@@ -49,19 +45,9 @@ class PlatformInfo {
 
   bool get isWindows => os == HostOs.windows;
   bool get isMacOS => os == HostOs.macos;
-  bool get isAndroid => os == HostOs.android;
   bool get isLinux => os == HostOs.linux;
 
-  /// iOS can't start child processes: it uses the built-in engine in
-  /// `services/ios/` (YouTube extraction in Dart, muxing with AVFoundation).
-  bool get isIOS => os == HostOs.ios;
-
-  /// Phones and tablets (no folder picker, system share UI).
-  bool get isMobile => isAndroid || isIOS;
-
-  /// Desktop platforms run yt-dlp/FFmpeg as native child processes. On Android
-  /// they are embedded in the APK and run through the platform channel.
-  bool get isDesktop => isMacOS || isWindows || os == HostOs.linux;
+  bool get isDesktop => isMacOS || isWindows || isLinux;
 
   String get exeSuffix => isWindows ? '.exe' : '';
 
@@ -70,8 +56,6 @@ class PlatformInfo {
       HostOs.macos => 'macOS',
       HostOs.windows => 'Windows',
       HostOs.linux => 'Linux',
-      HostOs.android => 'Android',
-      HostOs.ios => 'iOS',
       HostOs.other => 'Unknown OS',
     };
     final a = switch (arch) {

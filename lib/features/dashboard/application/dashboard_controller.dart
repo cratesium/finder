@@ -173,10 +173,10 @@ class DashboardController extends Notifier<DashboardState> {
     try {
       final deps = await ref.read(dependencyProvider.future);
       if (!deps.ytDlp.isReady) {
-        final hint = ref.read(platformInfoProvider).isAndroid
-            ? 'The built-in download engine isn\'t available. Free up storage and try again, or reinstall Finder.'
-            : 'The built-in download engine isn\'t available. Open Settings → Built-in engine for details.';
-        throw AppError(AppErrorKind.missingDependency, hint);
+        throw const AppError(
+          AppErrorKind.missingDependency,
+          'The built-in download engine isn\'t available. Open Settings → Built-in engine for details.',
+        );
       }
       final network = await ref.read(ytDlpNetworkProvider.future);
       final info = await ref
