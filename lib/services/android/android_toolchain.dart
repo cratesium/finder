@@ -9,12 +9,7 @@ import '../process_service.dart';
 
 final _log = Logger('android');
 
-/// On Android, yt-dlp (with its own Python runtime) and FFmpeg ship inside the
-/// APK as native libraries (youtubedl-android). They can't be started with
-/// `Process.start`, so the Kotlin side runs them and streams output back.
-///
-/// These sentinel "paths" stand in for executables everywhere the desktop code
-/// expects a path.
+/// Sentinel paths used where desktop code expects yt-dlp / ffmpeg executables.
 abstract final class AndroidBundled {
   static const ytDlpPath = 'bundled://yt-dlp';
   static const ffmpegPath = 'bundled://ffmpeg';
@@ -22,7 +17,7 @@ abstract final class AndroidBundled {
   static bool isBundled(String? path) => path != null && path.startsWith('bundled://');
 }
 
-/// Thin wrapper over the `finder/toolchain` platform channels.
+/// Platform channel to the Kotlin [Toolchain] (youtubedl-android).
 class AndroidToolchain {
   AndroidToolchain({
     this._method = const MethodChannel('finder/toolchain'),
@@ -33,9 +28,6 @@ class AndroidToolchain {
   final EventChannel _eventsChannel;
   Stream<Map<Object?, Object?>>? _events;
 
-  /// All toolchain events: `{id, type: 'out', line}`,
-  /// `{id, type: 'exit', code, stderr}` and `{type: 'cancelAll'}` (the user
-  /// tapped "Cancel all" on the background-download notification).
   Stream<Map<Object?, Object?>> get events =>
       _events ??= _eventsChannel.receiveBroadcastStream().map((e) => e as Map<Object?, Object?>).asBroadcastStream();
 
@@ -43,55 +35,21 @@ class AndroidToolchain {
 
   Future<void> stop(int id) => _method.invokeMethod<void>('stop', {'id': id});
 
-  /// Waits until the yt-dlp / FFmpeg payloads unpacked from the APK are ready.
-  /// Call during startup (first launch can take several seconds).
+  /// First launch unpacks Python / yt-dlp from the APK; can take a few seconds.
   Future<void> ensureReady() => _method.invokeMethod<void>('ensureReady');
 
-  Future<String?> ffmpegVersion() => _method.invokeMethod<String>('ffmpegVersion');
-
-  /// Updates the embedded yt-dlp to the latest stable release.
-  /// Returns `done` or `alreadyUpToDate`.
   Future<String?> updateYtDlp() => _method.invokeMethod<String>('updateYtDlp');
 
-  /// Public `Download/Finder` folder.
   Future<String?> downloadsDirectory() => _method.invokeMethod<String>('downloadsDirectory');
 
-  /// Requests legacy storage permission where needed (Android 9 and older).
   Future<bool> ensureStoragePermission() async => await _method.invokeMethod<bool>('ensureStoragePermission') ?? false;
-
-  /// Android 13+: asks (once per launch) to post notifications, which show
-  /// background download progress. Downloads work either way.
-  Future<bool> ensureNotificationPermission() async =>
-      await _method.invokeMethod<bool>('ensureNotificationPermission') ?? false;
-
-  /// Reports the queue to the foreground service that keeps downloads running
-  /// in the background (and drives its progress notification). The service
-  /// runs while [active] + [queued] > 0 and stops shortly after.
-  Future<void> setForegroundStatus({
-    required int active,
-    required int queued,
-    String? title,
-    double? progress,
-    int completed = 0,
-    int total = 0,
-  }) => _method.invokeMethod<void>('setForegroundStatus', {
-    'active': active,
-    'queued': queued,
-    'title': title,
-    'progress': progress,
-    'completed': completed,
-    'total': total,
-  });
 
   Future<void> openFile(String path) => _method.invokeMethod<void>('openFile', {'path': path});
 
   Future<void> openFolder(String path) => _method.invokeMethod<void>('openFolder', {'path': path});
 }
 
-/// [ProcessService] for Android: runs the embedded yt-dlp through the channel.
-///
-/// Only the bundled yt-dlp can be "started"; arguments are passed as a list and
-/// never through a shell, exactly as on desktop.
+/// Runs embedded yt-dlp via the platform channel (no [Process.start] on Android).
 class AndroidProcessService extends ProcessService {
   AndroidProcessService(this._toolchain);
 
@@ -154,8 +112,6 @@ class _ChannelProcess implements ManagedProcess {
   @override
   final int pid;
   final AndroidToolchain _toolchain;
-  // Single-subscription controllers buffer output that arrives before the
-  // caller starts listening.
   final _stdout = StreamController<String>();
   final _stderr = StreamController<String>();
   @override
@@ -166,7 +122,6 @@ class _ChannelProcess implements ManagedProcess {
   bool _terminating = false;
 
   void _finish(int code, String stderr) {
-    // yt-dlp's stderr is only available once the process ends.
     for (final line in stderr.split(RegExp(r'\r?\n'))) {
       if (line.isNotEmpty) _stderr.add(line);
     }

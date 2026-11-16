@@ -7,7 +7,6 @@ import '../core/config/app_config.dart';
 import '../core/errors/app_error.dart';
 import '../core/utils/platform_info.dart';
 import '../models/dependency_status.dart';
-import 'android/android_toolchain.dart';
 import 'binary_installer.dart';
 import 'ffmpeg_service.dart';
 import 'process_service.dart';
@@ -26,24 +25,18 @@ final _log = Logger('dependencies');
 ///    made when macOS refuses to run the bundled copy in place (a quarantined
 ///    app opened from Downloads runs from a read-only, translocated location).
 ///
-/// On Android both tools are embedded in the APK and run through
-/// [AndroidToolchain]; they are always "bundled".
 class DependencyManager {
   DependencyManager({
     required this.platform,
     required this._processes,
     required this.managedBinDir,
-    this.android,
     BinaryInstaller? installer,
   }) : _installer = installer ?? BinaryInstaller();
 
   final PlatformInfo platform;
   final ProcessService _processes;
   final String managedBinDir;
-  final AndroidToolchain? android;
   final BinaryInstaller _installer;
-
-  bool get _isAndroid => platform.isAndroid && android != null;
 
   /// Private copy of the bundled engine (macOS fallback, see class docs).
   String get engineCopyDir => p.join(p.dirname(managedBinDir), 'engine');
@@ -127,7 +120,6 @@ class DependencyManager {
   }
 
   Future<DependencyStatus> resolve(DependencyKind kind, {String? customPath}) async {
-    if (_isAndroid) return _resolveAndroid(kind);
     if (customPath != null && customPath.trim().isNotEmpty) {
       return validate(kind, customPath.trim(), DependencySource.custom);
     }
@@ -232,63 +224,6 @@ class DependencyManager {
     return parts.join('|');
   }
 
-  Future<DependencyStatus> _resolveAndroid(DependencyKind kind) async {
-    DependencyStatus failed(String why) => DependencyStatus(
-      kind: kind,
-      state: DependencyState.invalid,
-      path: kind == DependencyKind.ytDlp ? AndroidBundled.ytDlpPath : AndroidBundled.ffmpegPath,
-      source: DependencySource.bundled,
-      message: why,
-    );
-  Future<DependencyStatus> probe() async {
-      try {
-        await android!.ensureReady();
-      } catch (e) {
-        return failed('The built-in engine isn\'t ready yet: $e');
-      }
-      try {
-        final String? version;
-        if (kind == DependencyKind.ytDlp) {
-          final r = await _processes.run(AndroidBundled.ytDlpPath, const [
-            '--ignore-config',
-            '--version',
-          ], timeout: AppConfig.firstLaunchProbeTimeout);
-          final combined = '${r.stdout}\n${r.stderr}'.trim();
-          version = _ytDlpVersion.firstMatch(combined)?.group(0);
-          if (!r.ok && version == null) {
-            return failed(
-              r.timedOut
-                  ? 'The embedded yt-dlp did not respond in time (first launch can take a minute).'
-                  : 'The embedded yt-dlp failed to start (exit ${r.exitCode}).',
-            );
-          }
-        } else {
-          final out = await android!.ffmpegVersion();
-          version = out == null || out.trim().isEmpty ? null : FfmpegService.parseVersion(out);
-        }
-        return DependencyStatus(
-          kind: kind,
-          state: DependencyState.ready,
-          path: kind == DependencyKind.ytDlp ? AndroidBundled.ytDlpPath : AndroidBundled.ffmpegPath,
-          version: version ?? 'bundled',
-          source: DependencySource.bundled,
-        );
-      } catch (e) {
-        _log.warning('embedded ${kind.label} unavailable', e);
-        return failed('The embedded ${kind.label} could not be started.');
-      }
-    }
-
-    const delays = [Duration.zero, Duration(seconds: 2), Duration(seconds: 5)];
-    DependencyStatus? last;
-    for (final delay in delays) {
-      if (delay > Duration.zero) await Future<void>.delayed(delay);
-      last = await probe();
-      if (last.isReady) return last;
-    }
-    return last!;
-  }
-
   /// Verifies that [path] is a real, runnable [kind] executable.
   Future<DependencyStatus> validate(DependencyKind kind, String path, DependencySource source) async {
     DependencyStatus invalid(String why) =>
@@ -358,7 +293,7 @@ class DependencyManager {
   /// Whether Finder can download a verified official build on this OS.
   bool canInstall(DependencyKind kind) {
     if (kind == DependencyKind.ytDlp) {
-      return platform.isMacOS || platform.isWindows || platform.isLinux || _isAndroid;
+      return platform.isMacOS || platform.isWindows || platform.isLinux;
     }
     // FFmpeg's project only publishes source; yt-dlp's FFmpeg-Builds provides
     // checksummed Windows and Linux binaries. On macOS the verified build is
@@ -370,7 +305,6 @@ class DependencyManager {
     const reinstall =
         '${AppConfig.appName} ships with yt-dlp and FFmpeg built in. '
         'If one is missing, the installation is incomplete: reinstall ${AppConfig.appName}.';
-    if (_isAndroid) return reinstall;
     if (kind == DependencyKind.ytDlp) {
       return '$reinstall You can also click "Install" to download the official, '
           'SHA-256-verified yt-dlp release into the app.';
@@ -386,16 +320,6 @@ class DependencyManager {
   Future<DependencyStatus> install(DependencyKind kind, {InstallProgress? onProgress}) async {
     if (!canInstall(kind)) {
       throw AppError(AppErrorKind.missingDependency, guidance(kind));
-    }
-    if (_isAndroid) {
-      onProgress?.call(null, 'Updating yt-dlp');
-      final r = await android!.updateYtDlp();
-      _log.info('embedded yt-dlp update: $r');
-      final status = await resolve(kind);
-      if (!status.isReady) {
-        throw AppError(AppErrorKind.missingDependency, 'yt-dlp failed after updating: ${status.message}');
-      }
-      return status;
     }
     await Directory(managedBinDir).create(recursive: true);
     if (kind == DependencyKind.ytDlp) {

@@ -4,6 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../../features/history/data/history_repository.dart';
 import '../../features/settings/data/settings_repository.dart';
 import '../../models/app_settings.dart';
+import '../../services/android/android_platform_services.dart';
 import '../../services/android/android_toolchain.dart';
 import '../../services/dependency_manager.dart';
 import '../../services/directory_picker.dart';
@@ -61,11 +62,19 @@ final dependencyManagerProvider = Provider<DependencyManager>((ref) {
       managedBinDir: ref.watch(appPathsProvider).binDir,
     );
   }
+  final android = ref.watch(androidToolchainProvider);
+  if (android != null) {
+    return AndroidDependencyManager(
+      platform: platform,
+      processes: ref.watch(processServiceProvider),
+      managedBinDir: ref.watch(appPathsProvider).binDir,
+      toolchain: android,
+    );
+  }
   return DependencyManager(
     platform: platform,
     processes: ref.watch(processServiceProvider),
     managedBinDir: ref.watch(appPathsProvider).binDir,
-    android: ref.watch(androidToolchainProvider),
   );
 });
 

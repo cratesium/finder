@@ -1,9 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Keeps downloads running while the app is in the background. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Saving to Download/Finder on Android 9 and older. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -36,11 +33,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Foreground service that keeps active/queued downloads alive in the background. -->
-        <service
-            android:name=".DownloadService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
         <!-- Shares downloaded files with other apps for "Open". -->
         <provider
             android:name="androidx.core.content.FileProvider"

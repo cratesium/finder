@@ -7,20 +7,13 @@ import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import java.io.File
+import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
-/**
- * Process-wide owner of the embedded yt-dlp/FFmpeg runtime.
- *
- * It lives as long as the app process does, not as long as an Activity does.
- * While anything runs, [DownloadService] keeps the process in the foreground,
- * so downloads keep going when the app is backgrounded, the screen is turned
- * off or the task is swiped away.
- */
+/** Embedded yt-dlp + FFmpeg (youtubedl-android), shared for the app process. */
 object Toolchain {
     private val main = Handler(Looper.getMainLooper())
     private val initExecutor = Executors.newSingleThreadExecutor()
@@ -30,12 +23,8 @@ object Toolchain {
     @Volatile private var ready: Future<*>? = null
     private lateinit var app: Context
 
-    /** Receives `{id, type: out|exit, …}` and `{type: cancelAll}` events (main thread). */
     @Volatile var listener: ((Map<String, Any?>) -> Unit)? = null
 
-    val runningCount: Int get() = running.size
-
-    /** Starts unpacking Python/yt-dlp/FFmpeg once (the first launch takes a few seconds). */
     @Synchronized
     fun init(context: Context) {
         if (ready != null) return
@@ -46,23 +35,17 @@ object Toolchain {
         }
     }
 
-    /** Blocks until the embedded Python / yt-dlp / FFmpeg runtime is unpacked. */
     fun ensureReady() {
         val f = ready ?: error("Toolchain was not initialized")
-        // First launch after install can take a while on slower devices.
         if (!f.get(5, TimeUnit.MINUTES)) {
             throw IllegalStateException("The built-in download engine took too long to start.")
         }
-        // initExecutor surfaces failures through the Future; get() rethrows them.
     }
 
-    private fun awaitReady() {
-        ensureReady()
-    }
+    private fun awaitReady() = ensureReady()
 
     fun emit(event: Map<String, Any?>) = main.post { listener?.invoke(event) }
 
-    /** Runs yt-dlp with [args]; emits each stdout line, then the exit status. */
     fun start(id: Int, args: List<String>) {
         running[id] = runExecutor.submit {
             var code = 0
@@ -78,7 +61,6 @@ object Toolchain {
             } catch (e: YoutubeDL.CanceledException) {
                 code = 130
             } catch (e: YoutubeDLException) {
-                // execute() throws on a non-zero exit; the message is stderr.
                 code = 1
                 stderr = e.message ?: ""
             } catch (e: InterruptedException) {
@@ -89,32 +71,12 @@ object Toolchain {
             } finally {
                 running.remove(id)
                 emit(mapOf("id" to id, "type" to "exit", "code" to code, "stderr" to stderr))
-                main.post { DownloadService.sync(app) }
             }
         }
-        DownloadService.sync(app)
     }
 
     fun stop(id: Int) {
         YoutubeDL.getInstance().destroyProcessById(id.toString())
-    }
-
-    /** Last resort when nobody on the Dart side can cancel downloads properly. */
-    fun stopAll() {
-        for (id in running.keys) stop(id)
-    }
-
-    fun ffmpegVersion(): String {
-        awaitReady()
-        val ffmpeg = File(app.applicationInfo.nativeLibraryDir, "libffmpeg.so")
-        val libs = File(app.noBackupFilesDir, "youtubedl-android/packages/ffmpeg/usr/lib")
-        val process = ProcessBuilder(ffmpeg.absolutePath, "-hide_banner", "-version")
-            .redirectErrorStream(true)
-            .also { it.environment()["LD_LIBRARY_PATH"] = libs.absolutePath }
-            .start()
-        val out = process.inputStream.bufferedReader().readText()
-        if (!process.waitFor(20, TimeUnit.SECONDS)) process.destroy()
-        return out
     }
 
     fun updateYtDlp(): String {
@@ -125,11 +87,14 @@ object Toolchain {
         }
     }
 
-    /** Runs [work] off the main thread and delivers its result on the main thread. */
-    fun background(onResult: (Result<Any?>) -> Unit, work: () -> Any?) {
+    fun background(result: MethodChannel.Result, work: () -> Any?) {
         runExecutor.execute {
-            val r = runCatching(work)
-            main.post { onResult(r) }
+            try {
+                val value = work()
+                main.post { result.success(value) }
+            } catch (e: Exception) {
+                main.post { result.error("toolchain", e.message ?: e.toString(), null) }
+            }
         }
     }
 }
